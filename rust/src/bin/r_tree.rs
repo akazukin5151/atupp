@@ -38,17 +38,26 @@ fn main() {
         (pp_path, stations_path)
     };
 
+    eprintln!("loading stations...");
     let stations = load_stations(stations_path);
 
+    eprintln!("loading tree...");
     let tree: RTree<(f64, f64)> = RTree::bulk_load(stations);
 
+    eprintln!("getting city population...");
     let city_pop = total_city_pop(pp_path);
-    let pop_within_500 = pop_within_dist(tree, pp_path, 500.);
-    println!("{}", pop_within_500 / city_pop);
+    dbg!(city_pop);
+
+    let mut max_dist = 100.;
+    while max_dist <= 1000. {
+        let pop_within = pop_within_dist(&tree, pp_path, max_dist);
+        println!("pop within {}m: {}", max_dist, pop_within / city_pop);
+        max_dist += 100.;
+    }
 }
 
 fn pop_within_dist(
-    tree: RTree<(f64, f64)>,
+    tree: &RTree<(f64, f64)>,
     pp_path: &str,
     max_distance: f64,
 ) -> f64 {
