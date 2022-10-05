@@ -1,3 +1,4 @@
+use indicatif::{ProgressBar, ProgressState, ProgressStyle};
 use rayon::prelude::*;
 use src::parse_csv_line;
 use std::fs::File;
@@ -26,24 +27,62 @@ fn pop_within_dist(matrix_path: &str, max_distance: f64) -> f64 {
     let pop_within_dist = Arc::new(Mutex::new(0.0));
 
     let mut fd = File::open(matrix_path).unwrap();
-    let mut buf = [0; 10_usize.pow(9)];
+
+    let bar = ProgressBar::new(fd.metadata().unwrap().len());
+    bar.set_style(ProgressStyle::with_template(
+            "[{elapsed_precise}] {wide_bar} {percent} {bytes_per_sec} (eta {eta_precise})"
+        )
+        .unwrap()
+    );
+
+    // 5 seems to be the maxima, beyond that the speed does not increase anymore
+    let mut buf = [0; 10_usize.pow(5)];
+
+    let mut current_block = String::new();
+    let mut chars_for_next = String::new();
+
     while let Ok(n) = fd.read(&mut buf) {
+        bar.inc(n as u64);
         let block = String::from_utf8_lossy(&buf);
-        let lines: Vec<_> = block.split('\n').collect();
-        lines.into_par_iter().for_each(|line| {
-            let xs = parse_csv_line(line);
-            // pp_x, pp_y, pop, dist
-            let pop: f64 = xs[2].parse().unwrap();
-            let distance: f64 = xs[4].parse().unwrap();
-            if distance <= max_distance {
-                *pop_within_dist.lock().unwrap() += pop;
-            }
-        });
+        if !chars_for_next.is_empty() {
+            current_block.push_str(&chars_for_next);
+            chars_for_next.clear();
+        }
+        if block.ends_with('\n') {
+            current_block.push_str(&block);
+        } else {
+            // remove all chars from the back until we find a newline
+            // store the removed chars in chars_for_next
+            // in the next iteration, join the removed chars and the next block
+            // in that order
+            let (complete_block, for_next) = block.rsplit_once('\n').unwrap();
+            current_block.push_str(complete_block);
+            current_block.push('\n');
+            chars_for_next = for_next.to_string();
+        }
+        let lines: Vec<_> = current_block.split('\n').collect();
+        lines[..]
+            .into_par_iter()
+            .filter(|line| !line.is_empty())
+            .for_each(|line| {
+                let xs = parse_csv_line(line);
+                // pp_x, pp_y, pop, dist
+                let pop: f64 = xs[2].parse().unwrap();
+                let r = xs[3].parse();
+                let distance: f64 = r.unwrap();
+                if distance <= max_distance {
+                    *pop_within_dist.lock().unwrap() += pop;
+                    //dbg!(&pop_within_dist);
+                }
+            });
         if n == 0 {
             break;
         }
         buf.fill(0);
     }
+
+    bar.finish();
+
     Arc::try_unwrap(pop_within_dist)
         .unwrap()
         .into_inner()
