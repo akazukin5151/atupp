@@ -25,9 +25,19 @@ use std::{
 };
 
 fn main() {
-    let pp_path = "../data/london_pp_meters.csv";
-    let stations_path =
-        "../data/london_trains/stations/station_coords_meters.csv";
+    let mut args = std::env::args();
+
+    let (pp_path, stations_path) = if args.nth(1).unwrap() == "london" {
+        let pp_path = "../data/london_pp_meters.csv";
+        let stations_path =
+            "../data/london_trains/stations/station_coords_meters.csv";
+        (pp_path, stations_path)
+    } else {
+        let pp_path = "../data/tokyo_pp_meters.csv";
+        let stations_path = "../data/tokyo_trains/coords_meters.csv";
+        (pp_path, stations_path)
+    };
+
     let stations = load_stations(stations_path);
 
     let tree: RTree<(f64, f64)> = RTree::bulk_load(stations);
