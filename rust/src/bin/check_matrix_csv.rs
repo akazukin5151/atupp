@@ -20,7 +20,7 @@ fn check_matrix_csv(matrix_path: &str) {
 
     let bar = ProgressBar::new(fd.metadata().unwrap().len());
     bar.set_style(ProgressStyle::with_template(
-            "[{elapsed_precise}] {wide_bar} {percent} {bytes_per_sec} (eta {eta_precise})"
+            "[{elapsed}] {bytes_per_sec:15} {wide_bar} {percent} ({eta:15})"
         )
         .unwrap()
     );
@@ -32,7 +32,6 @@ fn check_matrix_csv(matrix_path: &str) {
     let mut chars_for_next = String::new();
 
     while let Ok(n) = fd.read(&mut buf) {
-        bar.inc(n as u64);
         let block = String::from_utf8_lossy(&buf);
         if !chars_for_next.is_empty() {
             current_block.push_str(&chars_for_next);
@@ -55,6 +54,7 @@ fn check_matrix_csv(matrix_path: &str) {
             .into_par_iter()
             .filter(|line| !line.is_empty())
             .find_first(|line| {
+                bar.inc(1);
                 if **line == "pp_x,pp_y,pop,dist" {
                     return false;
                 }

@@ -1,4 +1,4 @@
-use indicatif::{ProgressBar, ProgressState, ProgressStyle};
+use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use src::parse_csv_line;
 use std::fs::File;
@@ -30,7 +30,7 @@ fn pop_within_dist(matrix_path: &str, max_distance: f64) -> f64 {
 
     let bar = ProgressBar::new(fd.metadata().unwrap().len());
     bar.set_style(ProgressStyle::with_template(
-            "[{elapsed_precise}] {wide_bar} {percent} {bytes_per_sec} (eta {eta_precise})"
+            "[{elapsed}] {bytes_per_sec:15} {wide_bar} {percent} ({eta:15})"
         )
         .unwrap()
     );
@@ -42,7 +42,6 @@ fn pop_within_dist(matrix_path: &str, max_distance: f64) -> f64 {
     let mut chars_for_next = String::new();
 
     while let Ok(n) = fd.read(&mut buf) {
-        bar.inc(n as u64);
         let block = String::from_utf8_lossy(&buf);
         if !chars_for_next.is_empty() {
             current_block.push_str(&chars_for_next);
@@ -65,6 +64,10 @@ fn pop_within_dist(matrix_path: &str, max_distance: f64) -> f64 {
             .into_par_iter()
             .filter(|line| !line.is_empty())
             .for_each(|line| {
+                bar.inc(1);
+                if *line == "pp_x,pp_y,pop,dist" {
+                    return;
+                }
                 let xs = parse_csv_line(line);
                 // pp_x, pp_y, pop, dist
                 let pop: f64 = xs[2].parse().unwrap();
