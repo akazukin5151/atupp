@@ -21,7 +21,7 @@ use rayon::prelude::*;
 use rstar::RTree;
 use src::parse_csv_line;
 use std::{
-    fs,
+    fs, io,
     sync::{Arc, Mutex},
 };
 
@@ -49,10 +49,17 @@ fn main() {
     let city_pop = total_city_pop(pp_path);
     dbg!(city_pop);
 
+    let mut wtr = csv::Writer::from_writer(io::stdout());
+    wtr.write_record(&["max_dist", "prop"]).unwrap();
+
     let mut max_dist = 100.;
-    while max_dist <= 1000. {
+    while max_dist <= 2000. {
         let pop_within = pop_within_dist(&tree, pp_path, max_dist);
-        println!("pop within {}m: {}", max_dist, pop_within / city_pop);
+        wtr.write_record(&[
+            format!("{}", max_dist),
+            format!("{}", pop_within / city_pop),
+        ])
+        .unwrap();
         max_dist += 100.;
     }
 }
