@@ -20,9 +20,7 @@ use rayon::prelude::*;
 use rstar::RTree;
 use src::parse_csv_line;
 use std::{
-    fs::{self, File},
-    io::Read,
-    str::from_utf8,
+    fs,
     sync::{Arc, Mutex},
 };
 
@@ -99,10 +97,7 @@ fn load_stations(path: &str) -> Vec<(f64, f64)> {
 
 // TODO: copied from cumulative
 fn total_city_pop(pp_path: &str) -> f64 {
-    let mut fd = File::open(pp_path).unwrap();
-    let mut file = Vec::new();
-    fd.read_to_end(&mut file).unwrap();
-    let file = from_utf8(&file).unwrap();
+    let file = fs::read_to_string(pp_path).unwrap();
     let mut sum = 0.0;
     for line in file.split('\n').skip(1).filter(|line| !line.is_empty()) {
         let xs = parse_csv_line(line);

@@ -1,7 +1,7 @@
 use geo::EuclideanDistance;
 use rayon::prelude::*;
 use src::parse_csv_line;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::{self, Read, Write};
 use std::sync::{Arc, Mutex};
 
@@ -67,9 +67,7 @@ fn calculate_matrix<R: Read, W: Write + Send>(
 }
 
 fn load_stations(path: &str) -> Vec<geo::Point> {
-    let mut fd = File::open(path).unwrap();
-    let mut file = String::new();
-    fd.read_to_string(&mut file).unwrap();
+    let file = fs::read_to_string(path).unwrap();
     let lines = file.split('\n');
     lines
         .skip(1)

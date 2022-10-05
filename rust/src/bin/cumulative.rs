@@ -1,9 +1,8 @@
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use src::parse_csv_line;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::Read;
-use std::str::from_utf8;
 use std::sync::{Arc, Mutex};
 
 fn main() {
@@ -93,10 +92,7 @@ fn pop_within_dist(matrix_path: &str, max_distance: f64) -> f64 {
 }
 
 fn total_city_pop(pp_path: &str) -> f64 {
-    let mut fd = File::open(pp_path).unwrap();
-    let mut file = Vec::new();
-    fd.read_to_end(&mut file).unwrap();
-    let file = from_utf8(&file).unwrap();
+    let file = fs::read_to_string(pp_path).unwrap();
     let mut sum = 0.0;
     for line in file.split('\n').skip(1).filter(|line| !line.is_empty()) {
         let xs = parse_csv_line(line);

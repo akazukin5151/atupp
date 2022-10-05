@@ -2,7 +2,7 @@ use src::parse_csv_line;
 use geo::Contains;
 use geojson::GeoJson;
 use rayon::prelude::*;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::{self, Read, Write};
 
 pub fn main() {
@@ -22,9 +22,7 @@ pub fn main() {
 
     let polygons = load_polygons(boundaries);
 
-    let mut fd = File::open(pp).unwrap();
-    let mut file = String::new();
-    fd.read_to_string(&mut file).unwrap();
+    let file = fs::read_to_string(pp).unwrap();
 
     let lines: Vec<_> = file.split('\n').collect();
     println!("{}", lines[0]);
