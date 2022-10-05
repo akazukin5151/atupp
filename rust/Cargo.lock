@@ -856,6 +856,7 @@ dependencies = [
  "indicatif",
  "itertools",
  "rayon",
+ "rstar",
 ]
 
 [[package]]
