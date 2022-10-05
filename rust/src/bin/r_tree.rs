@@ -52,6 +52,8 @@ fn pop_within_dist(
     pp_path: &str,
     max_distance: f64,
 ) -> f64 {
+    let max_distance_squared = max_distance * max_distance;
+
     let file = fs::read_to_string(pp_path).unwrap();
 
     // the pp file is just a few hundred MB, which can fit into RAM
@@ -75,7 +77,7 @@ fn pop_within_dist(
         if let Some((_, nearest_dist_squared)) =
             tree.nearest_neighbor_iter_with_distance_2(&(x, y)).next()
         {
-            if nearest_dist_squared <= (max_distance * max_distance) {
+            if nearest_dist_squared <= max_distance_squared {
                 *pop_within_dist.lock().unwrap() += pop;
             }
         };
