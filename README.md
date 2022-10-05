@@ -92,9 +92,9 @@ target/release/clip_pp london > ../data/london_pp.csv
 target/release/clip_pp tokyo > ../data/tokyo_pp.csv
 ```
 
-It reads the entire pp file into memory, then process parts of the file in parallel across multiple CPUs. To avoid accumulating a potentially huge result, it is better to write them immediately. To simplify things, writing is done by printing to stdout instead of writing to a file. Use a UNIX pipe to divert stdout to a file.
+It reads the entire population point file into memory, then splits up the file to process the bits in parallel across multiple CPUs. To avoid accumulating a potentially huge result, it writes the results immediately after calculating it. To simplify things, writing is done by printing to stdout instead of writing to a file. Use a UNIX pipe to divert stdout to a file. Rust already uses a mutex when writing to stdout, so there are no race conditions.
 
-These are rust programs in parallel (the first two rows). For comparison, these are the timings for serial and python.
+This is the first step that takes significant time (28 minutes for Tokyo). The time complexity is O(m), where m is the number of population points. Technically the city boundaries are multi-polygons so every polygon is compared, but in practice the number of population points dominates and it is always possible to dissolve the multi-polygons into one.
 
 ## Reproject stations and population points into WGS84, Pseudo-Mercator, EPSG:3857
 
@@ -105,7 +105,7 @@ python python/reproj_to_meters.py london_pp
 python python/reproj_to_meters.py tokyo_pp
 ```
 
-Distance matrix requires the coordinates to be in meters rather than lat/long.
+Calculating distances requires the coordinates to be in meters rather than lat/long.
 
 # Analysis
 
