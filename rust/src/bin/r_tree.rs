@@ -72,10 +72,10 @@ fn pop_within_dist(
         let x: f64 = xs[3].parse().unwrap();
         let y: f64 = xs[4].parse().unwrap();
 
-        if let Some((_, nearest_dist)) =
+        if let Some((_, nearest_dist_squared)) =
             tree.nearest_neighbor_iter_with_distance_2(&(x, y)).next()
         {
-            if nearest_dist <= max_distance {
+            if nearest_dist_squared <= (max_distance * max_distance) {
                 *pop_within_dist.lock().unwrap() += pop;
             }
         };
