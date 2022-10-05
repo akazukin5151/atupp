@@ -1,3 +1,4 @@
+#![warn(unused_crate_dependencies)]
 use src::parse_csv_line;
 use geo::Contains;
 use geojson::GeoJson;
