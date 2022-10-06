@@ -51,7 +51,7 @@ impl Search<Vec<i32>> for StationWithinPP {
 
         let dists: Vec<_> = (100..=3000).step_by(100).collect();
         dists.into_par_iter().for_each(|max_dist| {
-            let n_stations = Self::n_stations_within_dist(
+            let n_stations = Self::search(
                 tree,
                 pp_lines,
                 max_dist as f64,
@@ -64,7 +64,7 @@ impl Search<Vec<i32>> for StationWithinPP {
         });
     }
 
-    fn n_stations_within_dist(
+    fn search(
         tree: &RTree<(f64, f64)>,
         pp_lines: &[&str],
         max_distance: f64,
@@ -96,13 +96,16 @@ impl Search<Vec<i32>> for StationWithinPP {
     }
 }
 
-impl Plot<Vec<(i32, Vec<i32>)>> for StationWithinPP {
+// the result of the search function is Vec<i32> (U),
+// but actual data collected is that result plus the distance threshold,
+// over multiple distances, which is T
+impl Plot<Vec<(i32, Vec<i32>)>, Vec<i32>> for StationWithinPP {
     fn search_to_plot(tree: &RTree<(f64, f64)>, pp_lines: &[&str]) {
         eprintln!("searching...");
         let data = Arc::new(Mutex::new(vec![]));
         let dists: Vec<_> = (100..=3000).step_by(100).collect();
         dists.into_par_iter().for_each(|max_dist| {
-            let n_stations = Self::n_stations_within_dist(
+            let n_stations = Self::search(
                 tree,
                 pp_lines,
                 max_dist as f64,

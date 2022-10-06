@@ -58,7 +58,7 @@ impl Search<f64> for CumulativeProps {
         let dists: Vec<_> = (100..=3000).step_by(100).collect();
         dists.into_par_iter().for_each(|max_dist| {
             let pop_within =
-                Self::n_stations_within_dist(tree, pp_lines, max_dist as f64);
+                Self::search(tree, pp_lines, max_dist as f64);
             wtr.lock()
                 .unwrap()
                 .write_record(&[
@@ -69,7 +69,7 @@ impl Search<f64> for CumulativeProps {
         });
     }
 
-    fn n_stations_within_dist(
+    fn search(
         tree: &RTree<(f64, f64)>,
         pp_lines: &[&str],
         max_distance: f64,
