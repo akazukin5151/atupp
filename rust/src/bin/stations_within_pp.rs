@@ -1,7 +1,7 @@
 use plotters::prelude::*;
 use rayon::prelude::*;
 use rstar::RTree;
-use src::parse_csv_line;
+use src::{load_stations, parse_csv_line};
 use std::{
     fs, io,
     sync::{Arc, Mutex},
@@ -135,19 +135,3 @@ fn n_stations_within_dist(
         .unwrap()
 }
 
-fn load_stations(path: &str) -> Vec<(f64, f64)> {
-    let file = fs::read_to_string(path).unwrap();
-    let lines = file.split('\n');
-    lines
-        .skip(1)
-        .filter(|line| !line.is_empty())
-        .map(|line| {
-            let xs = parse_csv_line(line);
-
-            // both london and tokyo is (name, lat, lon, x, y)
-            let x: f64 = xs[3].parse().unwrap();
-            let y: f64 = xs[4].parse().unwrap();
-            (x, y)
-        })
-        .collect()
-}
