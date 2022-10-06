@@ -1,8 +1,6 @@
-// replace matrix.rs and cumulative.rs
-// matrix.rs is brute force O(n*m) search
+// a brute force search has time complexity O(n*m)
 // where n is the number of stations and m is the number of population points
-// which can reach millions to billions!
-// cumulative also goes through every point to compare distances: O(n)
+// and there are millions to billions of population points!
 
 // this program uses a r* tree, which is O(log(n)) for searching distances,
 // and O(n*log(n)) for insertion
@@ -41,24 +39,31 @@ fn main() {
     eprintln!("loading stations...");
     let stations = load_stations(stations_path);
 
-    eprintln!("loading tree...");
+    eprintln!("building tree...");
     let tree: RTree<(f64, f64)> = RTree::bulk_load(stations);
 
     // the pp file is just a few hundred MB, which can fit into RAM
-    eprintln!("loading population points...");
+    eprintln!("reading population points...");
     let file = fs::read_to_string(pp_path).unwrap();
+
+    let pp_lines: Vec<_> = file
+        .split('\n')
+        .skip(1)
+        .filter(|line| !line.is_empty())
+        .collect();
 
     eprintln!("getting city population...");
     let city_pop = total_city_pop(pp_path);
     dbg!(city_pop);
 
+    eprintln!("searching...");
     let mut wtr = csv::Writer::from_writer(io::stdout());
     wtr.write_record(&["max_dist", "prop"]).unwrap();
     let wtr = Arc::new(Mutex::new(wtr));
 
     let dists: Vec<_> = (100..=3000).step_by(100).collect();
     dists.into_par_iter().for_each(|max_dist| {
-        let pop_within = pop_within_dist(&tree, &file, max_dist as f64);
+        let pop_within = pop_within_dist(&tree, &pp_lines, max_dist as f64);
         wtr.lock()
             .unwrap()
             .write_record(&[
@@ -71,16 +76,10 @@ fn main() {
 
 fn pop_within_dist(
     tree: &RTree<(f64, f64)>,
-    file: &str,
+    pp_lines: &Vec<&str>,
     max_distance: f64,
 ) -> f64 {
     let max_distance_squared = max_distance * max_distance;
-
-    let pp_lines: Vec<_> = file
-        .split('\n')
-        .skip(1)
-        .filter(|line| !line.is_empty())
-        .collect();
 
     let pop_within_dist = Arc::new(Mutex::new(0.0));
 
@@ -108,7 +107,6 @@ fn pop_within_dist(
         .unwrap()
 }
 
-// TODO: copied from matrix
 fn load_stations(path: &str) -> Vec<(f64, f64)> {
     let file = fs::read_to_string(path).unwrap();
     let lines = file.split('\n');
@@ -126,7 +124,6 @@ fn load_stations(path: &str) -> Vec<(f64, f64)> {
         .collect()
 }
 
-// TODO: copied from cumulative
 fn total_city_pop(pp_path: &str) -> f64 {
     let file = fs::read_to_string(pp_path).unwrap();
     let mut sum = 0.0;
