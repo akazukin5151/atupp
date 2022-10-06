@@ -45,6 +45,10 @@ fn main() {
     eprintln!("loading tree...");
     let tree: RTree<(f64, f64)> = RTree::bulk_load(stations);
 
+    eprintln!("loading population points...");
+    // the pp file is just a few hundred MB, which can fit into RAM
+    let file = fs::read_to_string(pp_path).unwrap();
+
     eprintln!("getting city population...");
     let city_pop = total_city_pop(pp_path);
     dbg!(city_pop);
@@ -52,9 +56,11 @@ fn main() {
     let mut wtr = csv::Writer::from_writer(io::stdout());
     wtr.write_record(&["max_dist", "prop"]).unwrap();
 
+    // no speed gains in parallelizing this loop because
+    // the pp file would have to be read by multiple CPUs in parallel
     let mut max_dist = 100.;
     while max_dist <= 2000. {
-        let pop_within = pop_within_dist(&tree, pp_path, max_dist);
+        let pop_within = pop_within_dist(&tree, &file, max_dist);
         wtr.write_record(&[
             format!("{}", max_dist),
             format!("{}", pop_within / city_pop),
@@ -66,14 +72,11 @@ fn main() {
 
 fn pop_within_dist(
     tree: &RTree<(f64, f64)>,
-    pp_path: &str,
+    file: &str,
     max_distance: f64,
 ) -> f64 {
     let max_distance_squared = max_distance * max_distance;
 
-    let file = fs::read_to_string(pp_path).unwrap();
-
-    // the pp file is just a few hundred MB, which can fit into RAM
     let pp_lines: Vec<_> = file
         .split('\n')
         .skip(1)
