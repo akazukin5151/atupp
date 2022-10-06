@@ -117,6 +117,16 @@ cargo b --release --bin cumulative_props
 target/release/cumulative_props london > ../data/london_props.csv
 target/release/cumulative_props tokyo > ../data/tokyo_props.csv
 cd ..
-python python/props/plot_props.py
+python python/plot_props.py
 ```
 
+## Stations within population points
+
+```sh
+cd rust
+cargo b --release --bin stations_within_pp
+target/release/stations_within_pp london > ../data/london_stations_within_pp.csv
+target/release/stations_within_pp tokyo > ../data/tokyo_stations_within_pp.csv
+cd ..
+python python/plot_stations_within_pp.py
+```
