@@ -113,9 +113,9 @@ Calculating distances requires the coordinates to be in meters rather than lat/l
 
 ```sh
 cd rust
-cargo b --release --bin r_tree
-target/release/r_tree london > ../data/london_props.csv
-target/release/r_tree tokyo > ../data/tokyo_props.csv
+cargo b --release --bin cumulative_props
+target/release/cumulative_props london > ../data/london_props.csv
+target/release/cumulative_props tokyo > ../data/tokyo_props.csv
 cd ..
 python python/props/plot_props.py
 ```
