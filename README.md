@@ -130,3 +130,15 @@ target/release/stations_within_pp tokyo > ../data/tokyo_stations_within_pp.csv
 cd ..
 python python/plot_stations_within_pp.py
 ```
+
+## Population points and number of stations within 500m of them
+
+```sh
+cd rust
+cargo b --release --bin quadrants
+target/release/quadrants london > ../data/london_quadrant.csv
+target/release/quadrants tokyo > ../data/tokyo_quadrant.csv
+
+cd ..
+python python/plot_quadrant.py
+```
