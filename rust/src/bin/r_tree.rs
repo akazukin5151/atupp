@@ -45,8 +45,8 @@ fn main() {
     eprintln!("loading tree...");
     let tree: RTree<(f64, f64)> = RTree::bulk_load(stations);
 
-    eprintln!("loading population points...");
     // the pp file is just a few hundred MB, which can fit into RAM
+    eprintln!("loading population points...");
     let file = fs::read_to_string(pp_path).unwrap();
 
     eprintln!("getting city population...");
@@ -55,19 +55,19 @@ fn main() {
 
     let mut wtr = csv::Writer::from_writer(io::stdout());
     wtr.write_record(&["max_dist", "prop"]).unwrap();
+    let wtr = Arc::new(Mutex::new(wtr));
 
-    // no speed gains in parallelizing this loop because
-    // the pp file would have to be read by multiple CPUs in parallel
-    let mut max_dist = 100.;
-    while max_dist <= 2000. {
-        let pop_within = pop_within_dist(&tree, &file, max_dist);
-        wtr.write_record(&[
-            format!("{}", max_dist),
-            format!("{}", pop_within / city_pop),
-        ])
-        .unwrap();
-        max_dist += 100.;
-    }
+    let dists: Vec<_> = (100..=2000).step_by(100).collect();
+    dists.into_par_iter().for_each(|max_dist| {
+        let pop_within = pop_within_dist(&tree, &file, max_dist as f64);
+        wtr.lock()
+            .unwrap()
+            .write_record(&[
+                format!("{}", max_dist),
+                format!("{}", pop_within / city_pop),
+            ])
+            .unwrap();
+    });
 }
 
 fn pop_within_dist(
