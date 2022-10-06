@@ -1,7 +1,9 @@
 use plotters::prelude::*;
 use rayon::prelude::*;
 use rstar::RTree;
-use src::{load_stations, parse_csv_line, Plot, Search};
+use src::{
+    load_stations, parse_csv_line, plot_hline, plot_vline, Plot, Search,
+};
 use std::{
     fs, io,
     sync::{Arc, Mutex},
@@ -126,6 +128,31 @@ impl Plot<Vec<(f64, i32)>, Vec<(f64, i32)>> for Quadrants {
             data.iter()
                 .map(|(x, y)| Circle::new((*x, *y), 2_i32, GREEN.filled())),
         )?;
+
+        let populations: Vec<_> = data.iter().map(|x| x.0).collect();
+        let pop_q3 = Quartiles::new(&populations).values()[3];
+        plot_vline(
+            &root,
+            &scatter_ctx,
+            pop_q3.into(),
+            0,
+            0,
+            BLUE.stroke_width(1),
+        )
+        .unwrap();
+
+        let n_stations: Vec<_> = data.iter().map(|x| x.1).collect();
+        let n_stations_q3 = Quartiles::new(&n_stations).values()[3];
+        dbg!(n_stations_q3);
+        plot_hline(
+            &root,
+            &scatter_ctx,
+            n_stations_q3 as i32,
+            0,
+            max_x_value,
+            BLUE.filled(),
+        )
+        .unwrap();
 
         root.present().unwrap();
 
