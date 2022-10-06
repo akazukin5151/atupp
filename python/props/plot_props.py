@@ -10,5 +10,8 @@ tokyo['city'] = 'tokyo'
 
 df = pd.concat([london, tokyo])
 
-sns.barplot(data=df, x='max_dist', y='prop', hue='city')
-plt.show()
+g = sns.barplot(data=df, x='max_dist', y='prop', hue='city')
+
+g.set_xticklabels(g.get_xticklabels(), rotation=90)
+plt.tight_layout()
+plt.savefig('out/props.png')
