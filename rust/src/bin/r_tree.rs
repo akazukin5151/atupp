@@ -56,7 +56,7 @@ fn main() {
     wtr.write_record(&["max_dist", "prop"]).unwrap();
     let wtr = Arc::new(Mutex::new(wtr));
 
-    let dists: Vec<_> = (100..=2000).step_by(100).collect();
+    let dists: Vec<_> = (100..=3000).step_by(100).collect();
     dists.into_par_iter().for_each(|max_dist| {
         let pop_within = pop_within_dist(&tree, &file, max_dist as f64);
         wtr.lock()
