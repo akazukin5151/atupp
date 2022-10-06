@@ -1,4 +1,3 @@
-#![warn(unused_crate_dependencies)]
 // replace matrix.rs and cumulative.rs
 // matrix.rs is brute force O(n*m) search
 // where n is the number of stations and m is the number of population points
