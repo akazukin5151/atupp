@@ -1,19 +1,3 @@
-// a brute force search has time complexity O(n*m)
-// where n is the number of stations and m is the number of population points
-// and there are millions to billions of population points!
-
-// this program uses a r* tree, which is O(log(n)) for searching distances,
-// and O(n*log(n)) for insertion
-// if we only insert the stations (tokyo has only ~1000), then insertion time is
-// negligible.
-// there are m population points, so searching for the nearest station
-// for every population point is O(m*log(n)).
-// m is much larger than log(n) so it's basically O(m)
-// Vec<(pp, nearest_station)
-// Vec<(pp, nearest_station_distance)
-// from here a O(1) comparison can be made for any distance threshold.
-// for example filter all nearest stations to be within 500m
-
 use rayon::prelude::*;
 use rstar::RTree;
 use src::parse_csv_line;
@@ -52,6 +36,10 @@ fn main() {
         .filter(|line| !line.is_empty())
         .collect();
 
+    search_to_file(&tree, &pp_lines, pp_path);
+}
+
+fn search_to_file(tree: &RTree<(f64, f64)>, pp_lines: &[&str], pp_path: &str) {
     eprintln!("getting city population...");
     let city_pop = total_city_pop(pp_path);
     dbg!(city_pop);
@@ -63,7 +51,7 @@ fn main() {
 
     let dists: Vec<_> = (100..=3000).step_by(100).collect();
     dists.into_par_iter().for_each(|max_dist| {
-        let pop_within = pop_within_dist(&tree, &pp_lines, max_dist as f64);
+        let pop_within = pop_within_dist(tree, pp_lines, max_dist as f64);
         wtr.lock()
             .unwrap()
             .write_record(&[
