@@ -76,7 +76,7 @@ fn main() {
 
 fn pop_within_dist(
     tree: &RTree<(f64, f64)>,
-    pp_lines: &Vec<&str>,
+    pp_lines: &[&str],
     max_distance: f64,
 ) -> f64 {
     let max_distance_squared = max_distance * max_distance;

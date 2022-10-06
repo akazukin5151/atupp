@@ -40,7 +40,7 @@ fn main() {
     search_to_plot(&tree, &pp_lines);
 }
 
-fn search_to_file(tree: &RTree<(f64, f64)>, pp_lines: &Vec<&str>) {
+fn search_to_file(tree: &RTree<(f64, f64)>, pp_lines: &[&str]) {
     eprintln!("searching...");
     let mut wtr = csv::Writer::from_writer(io::stdout());
     wtr.write_record(&["population", "n_stations"]).unwrap();
@@ -54,7 +54,7 @@ fn search_to_file(tree: &RTree<(f64, f64)>, pp_lines: &Vec<&str>) {
     }
 }
 
-fn search_to_plot(tree: &RTree<(f64, f64)>, pp_lines: &Vec<&str>) {
+fn search_to_plot(tree: &RTree<(f64, f64)>, pp_lines: &[&str]) {
     eprintln!("searching...");
 
     let mut result = vec![];
@@ -97,7 +97,7 @@ fn plot(data: Vec<(f64, i32)>) -> Result<(), Box<dyn std::error::Error>> {
 
 fn n_stations_within_dist(
     tree: &RTree<(f64, f64)>,
-    pp_lines: &Vec<&str>,
+    pp_lines: &[&str],
     max_distance: f64,
 ) -> Vec<(f64, i32)> {
     let max_distance_squared = max_distance * max_distance;
