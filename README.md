@@ -109,24 +109,14 @@ Calculating distances requires the coordinates to be in meters rather than lat/l
 
 # Analysis
 
-## Calculate the distance matrix for station to population point
+## Cumulative population within a certain distance of a train station
 
 ```sh
 cd rust
-cargo b --release --bin matrix
-target/release/matrix london > ../data/london_matrix.csv
-target/release/matrix tokyo > ../data/tokyo_matrix.csv
+cargo b --release --bin r_tree
+target/release/r_tree london > ../data/london_props.csv
+target/release/r_tree tokyo > ../data/tokyo_props.csv
+cd ..
+python python/props/plot_props.py
 ```
-
-273 london stations * 1044719 london pps = 2.85e8
-
-london_matrix.csv has 2.84e8 lines and 19.5 GB
-
-19.5 GB = 19.5e9 = 1.95e10
-
-so the average line is 68.37 bytes
-
-1412 tokyo stations * 6083761 tokyo pps = 8.59e9
-
-8.59e9 lines * 68.37 bytes = 5.873e11 bytes = 597.3e9 bytes = 597.3 GB
 
