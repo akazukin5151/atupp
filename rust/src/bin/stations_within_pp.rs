@@ -43,25 +43,17 @@ fn main() {
 
     let dists: Vec<_> = (100..=3000).step_by(100).collect();
     dists.into_par_iter().for_each(|max_dist| {
-        let pop_within = pop_within_dist(&tree, &pp_lines, max_dist as f64);
-        wtr.lock()
-            .unwrap()
-            .write_record(&[
-                format!("{}", max_dist),
-                format!(
-                    "{}",
-                    pop_within
-                        .iter()
-                        .map(|x| format!("{}", x))
-                        .collect::<Vec<_>>()
-                        .join(",")
-                ),
-            ])
-            .unwrap();
+        let n_stations =
+            n_stations_within_dist(&tree, &pp_lines, max_dist as f64);
+        let mut w = wtr.lock().unwrap();
+        for num in n_stations {
+            w.write_record(&[format!("{}", max_dist), format!("{}", num)])
+                .unwrap();
+        }
     });
 }
 
-fn pop_within_dist(
+fn n_stations_within_dist(
     tree: &RTree<(f64, f64)>,
     pp_lines: &Vec<&str>,
     max_distance: f64,
@@ -108,4 +100,3 @@ fn load_stations(path: &str) -> Vec<(f64, f64)> {
         })
         .collect()
 }
-
