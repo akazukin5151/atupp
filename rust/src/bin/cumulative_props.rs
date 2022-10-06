@@ -1,6 +1,6 @@
 use rayon::prelude::*;
 use rstar::RTree;
-use src::{load_stations, parse_csv_line};
+use src::{load_stations, parse_csv_line, Search};
 use std::{
     fs, io,
     sync::{Arc, Mutex},
@@ -36,63 +36,71 @@ fn main() {
         .filter(|line| !line.is_empty())
         .collect();
 
-    search_to_file(&tree, &pp_lines, pp_path);
+    let o = CumulativeProps { pp_path };
+    o.search_to_file(&tree, &pp_lines);
 }
 
-fn search_to_file(tree: &RTree<(f64, f64)>, pp_lines: &[&str], pp_path: &str) {
-    eprintln!("getting city population...");
-    let city_pop = total_city_pop(pp_path);
-    dbg!(city_pop);
+struct CumulativeProps {
+    pp_path: &'static str,
+}
 
-    eprintln!("searching...");
-    let mut wtr = csv::Writer::from_writer(io::stdout());
-    wtr.write_record(&["max_dist", "prop"]).unwrap();
-    let wtr = Arc::new(Mutex::new(wtr));
+impl Search<f64> for CumulativeProps {
+    fn search_to_file(&self, tree: &RTree<(f64, f64)>, pp_lines: &[&str]) {
+        eprintln!("getting city population...");
+        let city_pop = total_city_pop(self.pp_path);
+        dbg!(city_pop);
 
-    let dists: Vec<_> = (100..=3000).step_by(100).collect();
-    dists.into_par_iter().for_each(|max_dist| {
-        let pop_within = pop_within_dist(tree, pp_lines, max_dist as f64);
-        wtr.lock()
+        eprintln!("searching...");
+        let mut wtr = csv::Writer::from_writer(io::stdout());
+        wtr.write_record(&["max_dist", "prop"]).unwrap();
+        let wtr = Arc::new(Mutex::new(wtr));
+
+        let dists: Vec<_> = (100..=3000).step_by(100).collect();
+        dists.into_par_iter().for_each(|max_dist| {
+            let pop_within =
+                Self::n_stations_within_dist(tree, pp_lines, max_dist as f64);
+            wtr.lock()
+                .unwrap()
+                .write_record(&[
+                    format!("{}", max_dist),
+                    format!("{}", pop_within / city_pop),
+                ])
+                .unwrap();
+        });
+    }
+
+    fn n_stations_within_dist(
+        tree: &RTree<(f64, f64)>,
+        pp_lines: &[&str],
+        max_distance: f64,
+    ) -> f64 {
+        let max_distance_squared = max_distance * max_distance;
+
+        let pop_within_dist = Arc::new(Mutex::new(0.0));
+
+        pp_lines.into_par_iter().for_each(|pp_line| {
+            let xs = parse_csv_line(pp_line);
+
+            // a line in pp looks like this
+            // lat/lon, lat/lon, pop, x, y
+            let pop: f64 = xs[2].parse().unwrap();
+            let x: f64 = xs[3].parse().unwrap();
+            let y: f64 = xs[4].parse().unwrap();
+
+            if let Some((_, nearest_dist_squared)) =
+                tree.nearest_neighbor_iter_with_distance_2(&(x, y)).next()
+            {
+                if nearest_dist_squared <= max_distance_squared {
+                    *pop_within_dist.lock().unwrap() += pop;
+                }
+            };
+        });
+
+        Arc::try_unwrap(pop_within_dist)
             .unwrap()
-            .write_record(&[
-                format!("{}", max_dist),
-                format!("{}", pop_within / city_pop),
-            ])
-            .unwrap();
-    });
-}
-
-fn pop_within_dist(
-    tree: &RTree<(f64, f64)>,
-    pp_lines: &[&str],
-    max_distance: f64,
-) -> f64 {
-    let max_distance_squared = max_distance * max_distance;
-
-    let pop_within_dist = Arc::new(Mutex::new(0.0));
-
-    pp_lines.into_par_iter().for_each(|pp_line| {
-        let xs = parse_csv_line(pp_line);
-
-        // a line in pp looks like this
-        // lat/lon, lat/lon, pop, x, y
-        let pop: f64 = xs[2].parse().unwrap();
-        let x: f64 = xs[3].parse().unwrap();
-        let y: f64 = xs[4].parse().unwrap();
-
-        if let Some((_, nearest_dist_squared)) =
-            tree.nearest_neighbor_iter_with_distance_2(&(x, y)).next()
-        {
-            if nearest_dist_squared <= max_distance_squared {
-                *pop_within_dist.lock().unwrap() += pop;
-            }
-        };
-    });
-
-    Arc::try_unwrap(pop_within_dist)
-        .unwrap()
-        .into_inner()
-        .unwrap()
+            .into_inner()
+            .unwrap()
+    }
 }
 
 fn total_city_pop(pp_path: &str) -> f64 {

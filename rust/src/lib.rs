@@ -1,4 +1,23 @@
 use std::fs;
+use rstar::RTree;
+
+pub trait Search<T> {
+    fn search_to_file(
+        &self,
+        tree: &RTree<(f64, f64)>,
+        pp_lines: &[&str],
+    );
+    fn n_stations_within_dist(
+        tree: &RTree<(f64, f64)>,
+        pp_lines: &[&str],
+        max_distance: f64,
+    ) -> T;
+}
+
+pub trait Plot<T> {
+    fn search_to_plot(tree: &RTree<(f64, f64)>, pp_lines: &[&str]);
+    fn plot(data: T) -> Result<(), Box<dyn std::error::Error>>;
+}
 
 // TODO: use serde
 pub fn parse_csv_line(line: &str) -> Vec<&str> {
