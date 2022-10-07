@@ -143,7 +143,7 @@ target/release/clip_pp tokyo > ../data/tokyo_pp.csv
 
 It reads the entire population point file into memory, then splits up the file to process the bits in parallel across multiple CPUs. To avoid accumulating a potentially huge result, it writes the results immediately after calculating it. To simplify things, writing is done by printing to stdout instead of writing to a file. Use a UNIX pipe to divert stdout to a file. Rust already uses a mutex when writing to stdout, so there are no race conditions.
 
-This is the first step that takes significant time (28 minutes for Tokyo). The time complexity is O(m), where m is the number of population points. Technically the city boundaries are multi-polygons so every polygon is compared, but in practice the number of population points dominates and it is always possible to dissolve the multi-polygons into one.
+This is the first step that takes significant time (28 minutes for Tokyo). Technically the city boundaries are multi-polygons so every polygon is compared, but in practice the number of population points dominates and it is always possible to dissolve the multi-polygons into one.
 
 ## Reproject stations and population points into WGS84, Pseudo-Mercator, EPSG:3857
 
@@ -182,9 +182,9 @@ target/release/stations_within_pp tokyo
 
 A brute force search has time complexity O(n\*m), where n is the number of stations and m is the number of population points. There are millions to billions of population points so asymptotic growth is really important here.
 
-This program uses a r\* tree, which is O(log(n)) for searching distances, and O(n\*log(n)) for insertion. If we only insert the stations (Tokyo has only ~1000), then insertion time is negligible. Bulk loading the stations will also reduce tree building time.
+This program uses a R\* tree, which is O(log(n)) for searching, and O(n\*log(n)) for insertion. If we only insert the stations (Tokyo has only ~1000), then insertion time is negligible. Bulk loading the stations will also reduce tree building time.
 
-There are m population points, so searching for the nearest station for every population point is O(m\*log(n)). Because the number of population points m >>> number of stations n, m >>> log(n), so it's basically O(m). This is significantly faster than O(n\*m).
+There are m population points, so searching for the nearest station for every population point is O(m\*log(n)). The number of population points m >>> number of stations n, m >>> log(n), so it's basically O(m). This is significantly faster than O(n\*m).
 
 ## Population points and number of stations within X meters of the points
 
