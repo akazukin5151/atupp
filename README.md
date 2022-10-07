@@ -196,3 +196,21 @@ cd ..
 python python/plot_significant_quadrants_map.py london greens
 python python/plot_significant_quadrants_map.py tokyo greens
 ```
+
+## Map of all population points, colored by their quadrant
+
+```sh
+cd rust
+target/release/quadrant_coords london 1500 red > ../data/london_reds.csv
+target/release/quadrant_coords tokyo 1500 red > ../data/tokyo_reds.csv
+target/release/quadrant_coords london 1500 orange > ../data/london_oranges.csv
+target/release/quadrant_coords tokyo 1500 orange > ../data/tokyo_oranges.csv
+target/release/quadrant_coords london 1500 blue > ../data/london_blues.csv
+target/release/quadrant_coords tokyo 1500 blue > ../data/tokyo_blues.csv
+target/release/quadrant_coords london 1500 green > ../data/london_greens.csv
+target/release/quadrant_coords tokyo 1500 green > ../data/tokyo_greens.csv
+
+cd ..
+python python/plot_quadrants_map.py london
+python python/plot_quadrants_map.py tokyo
+```
