@@ -125,10 +125,8 @@ python python/plot_props.py
 ```sh
 cd rust
 cargo b --release --bin stations_within_pp
-target/release/stations_within_pp london > ../data/london_stations_within_pp.csv
-target/release/stations_within_pp tokyo > ../data/tokyo_stations_within_pp.csv
-cd ..
-python python/plot_stations_within_pp.py
+target/release/stations_within_pp london
+target/release/stations_within_pp tokyo
 ```
 
 A brute force search has time complexity O(n\*m), where n is the number of stations and m is the number of population points. There are millions to billions of population points so asymptotic growth is really important here.
@@ -142,9 +140,5 @@ There are m population points, so searching for the nearest station for every po
 ```sh
 cd rust
 cargo b --release --bin quadrants
-target/release/quadrants london > ../data/london_quadrant.csv
-target/release/quadrants tokyo > ../data/tokyo_quadrant.csv
-
-cd ..
-python python/plot_quadrant.py
+target/release/quadrants
 ```
