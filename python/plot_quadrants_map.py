@@ -35,5 +35,6 @@ for col_val, ax in g.axes_dict.items():
     sns.scatterplot(
         ax=ax, data=df[df['point_type'] == col_val], x='x', y='y', color=col_val
     )
+    ax.set_axis_off()
 
-plt.savefig(f'out/{city}_quadrants_map.png')
+g.savefig(f'out/{city}_quadrants_map.png')
