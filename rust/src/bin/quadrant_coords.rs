@@ -11,7 +11,6 @@ fn main() {
     let args: Vec<_> = std::env::args().collect();
     let city = &args[1];
     let distance_threshold = args[2].parse().unwrap();
-    let n_stations_q3 = args[3].parse().unwrap();
 
     let pp_path = format!("../data/{}_pp_meters.csv", city);
 
@@ -22,18 +21,12 @@ fn main() {
         "../data/tokyo_trains/coords_meters.csv"
     };
 
-    inner_main(
-        &pp_path,
-        stations_path,
-        n_stations_q3,
-        distance_threshold,
-    );
+    inner_main(&pp_path, stations_path, distance_threshold);
 }
 
 fn inner_main(
     pp_path: &str,
     stations_path: &str,
-    n_stations_q3: f64,
     distance_threshold: f64,
 ) {
     eprintln!("loading stations...");
@@ -52,19 +45,28 @@ fn inner_main(
         .filter(|line| !line.is_empty())
         .collect();
 
+    eprintln!("calculating Q3 of population points...");
     // TODO: for better code quality, pass this to the trait functions
     // so that the parsing isn't duplicated. in practice it doesn't
     // have a noticable impact on speed so not highest priority
-    let populations: Vec<_> = pp_lines.clone().into_par_iter().map(|pp_line| {
-        let xs = parse_csv_line(pp_line);
+    let populations: Vec<_> = pp_lines
+        .clone()
+        .into_par_iter()
+        .map(|pp_line| {
+            let xs = parse_csv_line(pp_line);
 
-        // a line in pp looks like this
-        // lat/lon, lat/lon, pop, x, y
-        let pop: f64 = xs[2].parse().unwrap();
-        pop
-    }).collect();
+            // a line in pp looks like this
+            // lat/lon, lat/lon, pop, x, y
+            let pop: f64 = xs[2].parse().unwrap();
+            pop
+        })
+        .collect();
 
     let pop_q3 = Quartiles::new(&populations).values()[3] as f64;
+
+    eprintln!("calculating Q3 of n stations...");
+    let n_stations_vec = count_n_stations(&tree, &pp_lines, distance_threshold);
+    let n_stations_q3 = Quartiles::new(&n_stations_vec).values()[3] as f64;
 
     let q = QuadrantCoords {
         pop_q3,
@@ -75,12 +77,40 @@ fn inner_main(
 }
 
 struct QuadrantCoords {
-    // TODO: calculate this without manual input
-    // all n_stations needs to be counted first, then calculate Q3
-    // one pass to do that count, calculate Q3, second pass to filter based on Q3
     pop_q3: f64,
     n_stations_q3: f64,
     distance_threshold: f64,
+}
+
+fn count_n_stations(
+    tree: &RTree<(f64, f64)>,
+    pp_lines: &[&str],
+    max_distance: f64,
+) -> Vec<i32> {
+    let max_distance_squared = max_distance * max_distance;
+
+    let pop_within_dist =
+        Arc::new(Mutex::new(Vec::with_capacity(pp_lines.len())));
+
+    pp_lines.into_par_iter().for_each(|pp_line| {
+        let mut n_stations = 0;
+        let xs = parse_csv_line(pp_line);
+
+        // a line in pp looks like this
+        // lat/lon, lat/lon, pop, x, y
+        let x: f64 = xs[3].parse().unwrap();
+        let y: f64 = xs[4].parse().unwrap();
+
+        for _ in tree.locate_within_distance((x, y), max_distance_squared) {
+            n_stations += 1;
+        }
+        (*pop_within_dist.lock().unwrap()).push(n_stations);
+    });
+
+    Arc::try_unwrap(pop_within_dist)
+        .unwrap()
+        .into_inner()
+        .unwrap()
 }
 
 impl Search<Vec<(f64, f64)>> for QuadrantCoords {
