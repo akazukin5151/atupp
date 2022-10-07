@@ -12,6 +12,37 @@ use std::{
 enum PointType {
     Red,
     Orange,
+    Blue,
+    Green,
+}
+
+impl PointType {
+    fn to_cond(
+        &self,
+        pop: f64,
+        n_stations: f64,
+        pop_q3: f64,
+        n_stations_q3: f64,
+    ) -> bool {
+        match self {
+            PointType::Red => {
+                // points with normal population but lots of stations
+                pop <= pop_q3 && n_stations > n_stations_q3
+            }
+            PointType::Orange => {
+                // points with high population but few stations
+                pop > pop_q3 && n_stations <= n_stations_q3
+            }
+            PointType::Blue => {
+                // points with high population and lots of stations
+                pop > pop_q3 && n_stations > n_stations_q3
+            }
+            PointType::Green => {
+                // points with low population and few stations
+                pop <= pop_q3 && n_stations <= n_stations_q3
+            }
+        }
+    }
 }
 
 fn main() {
@@ -19,12 +50,13 @@ fn main() {
     let city = &args[1];
     let distance_threshold = args[2].parse().unwrap();
     let filter_by = &args[3];
-    let point_type = if filter_by == "red" {
-        PointType::Red
-    } else {
-        PointType::Orange
+    let point_type = match filter_by.as_str() {
+        "red" => PointType::Red,
+        "orange" => PointType::Orange,
+        "blue" => PointType::Blue,
+        "green" => PointType::Green,
+        _ => panic!("unknown point type"),
     };
-
     let pp_path = format!("../data/{}_pp_meters.csv", city);
 
     // TODO: fix this inconsistency...
@@ -168,20 +200,14 @@ impl Search<Vec<(f64, f64)>> for QuadrantCoords {
             for _ in tree.locate_within_distance((x, y), max_distance_squared) {
                 n_stations += 1;
             }
-            // points with normal population but lots of stations
-            if matches!(self.point_type, PointType::Red) {
-                if pop <= self.pop_q3
-                    && (n_stations as f64) >= self.n_stations_q3
-                {
-                    (*pop_within_dist.lock().unwrap()).push((x, y));
-                }
-            } else {
-                // points with high population but few stations
-                if pop >= self.pop_q3
-                    && (n_stations as f64) <= self.n_stations_q3
-                {
-                    (*pop_within_dist.lock().unwrap()).push((x, y));
-                }
+            let n_stations = n_stations as f64;
+            if self.point_type.to_cond(
+                pop,
+                n_stations,
+                self.pop_q3,
+                self.n_stations_q3,
+            ) {
+                (*pop_within_dist.lock().unwrap()).push((x, y));
             }
         });
 
