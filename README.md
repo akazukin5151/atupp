@@ -144,7 +144,7 @@ There are m population points, so searching for the nearest station for every po
 cd rust
 cargo b --release --bin quadrants
 # Usage: target/release/quadrant [X meters]
-target/release/quadrants 1500
+target/release/quadrants 500
 ```
 
 ## Map of population points with normal population but high number of stations within X meters
@@ -153,8 +153,8 @@ target/release/quadrants 1500
 cd rust
 cargo b --release --bin quadrant_coords
 # Usage: target/release/quadrant_coords [city] [X meters] [point_type]
-target/release/quadrant_coords london 1500 red > ../data/london_reds.csv
-target/release/quadrant_coords tokyo 1500 red > ../data/tokyo_reds.csv
+target/release/quadrant_coords london 500 red > ../data/london_reds.csv
+target/release/quadrant_coords tokyo 500 red > ../data/tokyo_reds.csv
 
 cd ..
 python python/plot_significant_quadrants_map.py london reds
@@ -165,8 +165,8 @@ python python/plot_significant_quadrants_map.py tokyo reds
 
 ```sh
 cd rust
-target/release/quadrant_coords london 1500 orange > ../data/london_oranges.csv
-target/release/quadrant_coords tokyo 1500 orange > ../data/tokyo_oranges.csv
+target/release/quadrant_coords london 500 orange > ../data/london_oranges.csv
+target/release/quadrant_coords tokyo 500 orange > ../data/tokyo_oranges.csv
 
 cd ..
 python python/plot_significant_quadrants_map.py london oranges
@@ -177,8 +177,8 @@ python python/plot_significant_quadrants_map.py tokyo oranges
 
 ```sh
 cd rust
-target/release/quadrant_coords london 1500 blue > ../data/london_blues.csv
-target/release/quadrant_coords tokyo 1500 blue > ../data/tokyo_blues.csv
+target/release/quadrant_coords london 500 blue > ../data/london_blues.csv
+target/release/quadrant_coords tokyo 500 blue > ../data/tokyo_blues.csv
 
 cd ..
 python python/plot_significant_quadrants_map.py london blues
@@ -189,8 +189,8 @@ python python/plot_significant_quadrants_map.py tokyo blues
 
 ```sh
 cd rust
-target/release/quadrant_coords london 1500 green > ../data/london_greens.csv
-target/release/quadrant_coords tokyo 1500 green > ../data/tokyo_greens.csv
+target/release/quadrant_coords london 500 green > ../data/london_greens.csv
+target/release/quadrant_coords tokyo 500 green > ../data/tokyo_greens.csv
 
 cd ..
 python python/plot_significant_quadrants_map.py london greens
@@ -201,15 +201,15 @@ python python/plot_significant_quadrants_map.py tokyo greens
 
 ```sh
 cd rust
-target/release/quadrant_coords london 1500 red > ../data/london_reds.csv
-target/release/quadrant_coords london 1500 orange > ../data/london_oranges.csv
-target/release/quadrant_coords london 1500 blue > ../data/london_blues.csv
-target/release/quadrant_coords london 1500 green > ../data/london_greens.csv
+target/release/quadrant_coords london 500 red > ../data/london_reds.csv
+target/release/quadrant_coords london 500 orange > ../data/london_oranges.csv
+target/release/quadrant_coords london 500 blue > ../data/london_blues.csv
+target/release/quadrant_coords london 500 green > ../data/london_greens.csv
 
-target/release/quadrant_coords tokyo 1500 red > ../data/tokyo_reds.csv
-target/release/quadrant_coords tokyo 1500 orange > ../data/tokyo_oranges.csv
-target/release/quadrant_coords tokyo 1500 blue > ../data/tokyo_blues.csv
-target/release/quadrant_coords tokyo 1500 green > ../data/tokyo_greens.csv
+target/release/quadrant_coords tokyo 500 red > ../data/tokyo_reds.csv
+target/release/quadrant_coords tokyo 500 orange > ../data/tokyo_oranges.csv
+target/release/quadrant_coords tokyo 500 blue > ../data/tokyo_blues.csv
+target/release/quadrant_coords tokyo 500 green > ../data/tokyo_greens.csv
 
 cd ..
 python python/plot_quadrants_map.py london
