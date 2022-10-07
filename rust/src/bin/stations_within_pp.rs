@@ -1,6 +1,6 @@
-// Usage: target/release/stations_within_pp [city]
+// Usage: target/release/stations_within_pp
 
-use plotters::prelude::*;
+use plotters::{prelude::*, style::full_palette::GREY};
 use rayon::prelude::*;
 use rstar::RTree;
 use src::{load_stations, parse_csv_line, Plot, Search};
@@ -131,7 +131,7 @@ impl Plot<Vec<(i32, Vec<i32>, Vec<i32>)>, Vec<i32>> for StationWithinPP {
         &self,
         data: Vec<(i32, Vec<i32>, Vec<i32>)>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let root = BitMapBackend::new(&self.out_filename, (1024, 768))
+        let root = BitMapBackend::new(&self.out_filename, (1500, 768))
             .into_drawing_area();
 
         root.fill(&WHITE)?;
@@ -142,13 +142,20 @@ impl Plot<Vec<(i32, Vec<i32>, Vec<i32>)>, Vec<i32>> for StationWithinPP {
             .max()
             .unwrap_or(&0) as f32;
 
+        let max_x_value =
+            *data.iter().map(|(dist, _, _)| dist).max().unwrap_or(&0);
+
         let mut scatter_ctx = ChartBuilder::on(&root)
+            .margin(20_i32)
             .x_label_area_size(40_i32)
             .y_label_area_size(40_i32)
-            .build_cartesian_2d(0..3000_i32, 0.0..max_y_value)?;
+            .build_cartesian_2d(0..max_x_value, 0.0..max_y_value)?;
 
         scatter_ctx
             .configure_mesh()
+            .y_desc("Number of stations within distance threshold")
+            .x_desc("Distance threshold")
+            .x_labels((max_x_value / 100) as usize)
             .disable_x_mesh()
             .disable_y_mesh()
             .draw()?;
@@ -156,15 +163,21 @@ impl Plot<Vec<(i32, Vec<i32>, Vec<i32>)>, Vec<i32>> for StationWithinPP {
         scatter_ctx.draw_series(data.iter().map(
             |(distance, n_stations, _)| {
                 let n_stations_quartiles = Quartiles::new(n_stations);
-                Boxplot::new_vertical(*distance, &n_stations_quartiles)
+                Boxplot::new_vertical(*distance, &n_stations_quartiles).width(20)
             },
         ))?;
 
-        scatter_ctx.draw_series(data.iter().flat_map(|(max_dist, _, outliers)| {
-            outliers.iter().map(|y_value| {
-                Circle::new((*max_dist, *y_value as f32), 2_i32, GREEN.filled())
-            })
-        }))?;
+        scatter_ctx.draw_series(data.iter().flat_map(
+            |(max_dist, _, outliers)| {
+                outliers.iter().map(|y_value| {
+                    Circle::new(
+                        (*max_dist, *y_value as f32),
+                        2_i32,
+                        GREY.filled(),
+                    )
+                })
+            },
+        ))?;
 
         root.present().unwrap();
 
