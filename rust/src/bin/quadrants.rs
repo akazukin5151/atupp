@@ -1,4 +1,7 @@
-use plotters::prelude::*;
+use plotters::{
+    prelude::*,
+    style::full_palette::{GREY, ORANGE},
+};
 use rayon::prelude::*;
 use rstar::RTree;
 use src::{
@@ -126,6 +129,14 @@ impl Plot<Vec<(f64, i32)>, Vec<(f64, i32)>> for Quadrants {
         &self,
         data: Vec<(f64, i32)>,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        // TODO: draw text on the plot
+        let populations: Vec<_> = data.iter().map(|x| x.0).collect();
+        let pop_q3 = Quartiles::new(&populations).values()[3];
+        dbg!(pop_q3);
+        let n_stations: Vec<_> = data.iter().map(|x| x.1).collect();
+        let n_stations_q3 = Quartiles::new(&n_stations).values()[3];
+        dbg!(n_stations_q3);
+
         let root = BitMapBackend::new(&self.out_filename, (1024, 768))
             .into_drawing_area();
 
@@ -146,15 +157,17 @@ impl Plot<Vec<(f64, i32)>, Vec<(f64, i32)>> for Quadrants {
             .disable_y_mesh()
             .draw()?;
 
-        scatter_ctx.draw_series(
-            data.iter()
-                .map(|(x, y)| Circle::new((*x, *y), 2_i32, GREEN.filled())),
-        )?;
+        scatter_ctx.draw_series(data.iter().map(|(x, y)| {
+            let color = if x <= &(pop_q3 as f64) && *y as f32 > n_stations_q3 {
+                RED.filled()
+            } else if x > &(pop_q3 as f64) && *y as f32 <= n_stations_q3 {
+                ORANGE.filled()
+            } else {
+                GREY.filled()
+            };
+            Circle::new((*x, *y), 2_i32, color)
+        }))?;
 
-        let populations: Vec<_> = data.iter().map(|x| x.0).collect();
-        let pop_q3 = Quartiles::new(&populations).values()[3];
-        // TODO: draw text on the plot
-        dbg!(pop_q3);
         plot_vline(
             &root,
             &scatter_ctx,
@@ -165,9 +178,6 @@ impl Plot<Vec<(f64, i32)>, Vec<(f64, i32)>> for Quadrants {
         )
         .unwrap();
 
-        let n_stations: Vec<_> = data.iter().map(|x| x.1).collect();
-        let n_stations_q3 = Quartiles::new(&n_stations).values()[3];
-        dbg!(n_stations_q3);
         plot_hline(
             &root,
             &scatter_ctx,
