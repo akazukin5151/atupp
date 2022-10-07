@@ -1,3 +1,5 @@
+// Usage: target/release/cumulative_props [city]
+
 use rayon::prelude::*;
 use rstar::RTree;
 use src::{load_stations, parse_csv_line, Search};

@@ -1,3 +1,5 @@
+// Usage: target/release/quadrant_coords [city] [X meters]
+
 use plotters::prelude::Quartiles;
 use rayon::prelude::*;
 use rstar::RTree;

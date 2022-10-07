@@ -1,3 +1,5 @@
+// Usage: target/release/quadrant [X meters]
+
 use plotters::{
     prelude::*,
     style::full_palette::{GREY, ORANGE},

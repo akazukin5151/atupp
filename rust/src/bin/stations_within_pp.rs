@@ -1,3 +1,5 @@
+// Usage: target/release/stations_within_pp [city]
+
 use plotters::prelude::*;
 use rayon::prelude::*;
 use rstar::RTree;

@@ -88,6 +88,7 @@ This is a pretty wide definition of "Greater Tokyo", but the Japanese government
 ```sh
 cd rust
 cargo b --release --bin clip_pp
+# Usage: target/release/clip_pp [city]
 target/release/clip_pp london > ../data/london_pp.csv
 target/release/clip_pp tokyo > ../data/tokyo_pp.csv
 ```
@@ -114,6 +115,7 @@ Calculating distances requires the coordinates to be in meters rather than lat/l
 ```sh
 cd rust
 cargo b --release --bin cumulative_props
+# Usage: target/release/cumulative_props [city]
 target/release/cumulative_props london > ../data/london_props.csv
 target/release/cumulative_props tokyo > ../data/tokyo_props.csv
 cd ..
@@ -125,6 +127,7 @@ python python/plot_props.py
 ```sh
 cd rust
 cargo b --release --bin stations_within_pp
+# Usage: target/release/stations_within_pp [city]
 target/release/stations_within_pp london
 target/release/stations_within_pp tokyo
 ```
@@ -135,11 +138,12 @@ This program uses a r\* tree, which is O(log(n)) for searching distances, and O(
 
 There are m population points, so searching for the nearest station for every population point is O(m\*log(n)). Because the number of population points m >>> number of stations n, m >>> log(n), so it's basically O(m). This is significantly faster than O(n\*m).
 
-## Population points and number of stations within 500m of them
+## Population points and number of stations within X meters of the points
 
 ```sh
 cd rust
 cargo b --release --bin quadrants
+# Usage: target/release/quadrant [X meters]
 target/release/quadrants 3000
 ```
 
@@ -148,8 +152,7 @@ target/release/quadrants 3000
 ```sh
 cd rust
 cargo b --release --bin quadrant_coords
-# Usage:
-# target/release/quadrant_coords [city] [X meters]
+# Usage: target/release/quadrant_coords [city] [X meters]
 target/release/quadrant_coords london 3000 > ../data/london_reds.csv
 target/release/quadrant_coords tokyo 3000 > ../data/tokyo_reds.csv
 ```

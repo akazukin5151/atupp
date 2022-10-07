@@ -1,3 +1,5 @@
+// Usage: target/release/clip_pp [city]
+
 use src::parse_csv_line;
 use geo::Contains;
 use geojson::GeoJson;
