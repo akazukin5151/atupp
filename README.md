@@ -142,3 +142,15 @@ cd rust
 cargo b --release --bin quadrants
 target/release/quadrants 3000
 ```
+
+## Map of population points with normal population but high number of stops within X meters
+
+```sh
+cd rust
+cargo b --release --bin quadrant_coords
+# Usage:
+# target/release/quadrant_coords [city] [X meters] [Q3 of population] [Q3 of n_stations]
+target/release/quadrant_coords london 3000 10.608587 3.0 > ../data/london_reds.csv
+target/release/quadrant_coords tokyo 3000 8.678337 2.0 > ../data/tokyo_reds.csv
+```
+
