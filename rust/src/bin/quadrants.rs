@@ -1,9 +1,6 @@
 // Usage: target/release/quadrant [X meters]
 
-use plotters::{
-    prelude::*,
-    style::full_palette::ORANGE,
-};
+use plotters::{prelude::*, style::full_palette::ORANGE};
 use rayon::prelude::*;
 use rstar::RTree;
 use src::{
@@ -132,13 +129,10 @@ impl Plot<Vec<(f64, i32)>, Vec<(f64, i32)>> for Quadrants {
         &self,
         data: Vec<(f64, i32)>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        // TODO: draw text on the plot
         let populations: Vec<_> = data.iter().map(|x| x.0).collect();
         let pop_q3 = Quartiles::new(&populations).values()[3];
-        dbg!(pop_q3);
         let n_stations: Vec<_> = data.iter().map(|x| x.1).collect();
         let n_stations_q3 = Quartiles::new(&n_stations).values()[3];
-        dbg!(n_stations_q3);
 
         let root = BitMapBackend::new(&self.out_filename, (1024, 768))
             .into_drawing_area();
@@ -147,6 +141,7 @@ impl Plot<Vec<(f64, i32)>, Vec<(f64, i32)>> for Quadrants {
 
         let max_x_value = data.iter().map(|x| x.0).fold(f64::NAN, f64::max);
         let mut scatter_ctx = ChartBuilder::on(&root)
+            .margin(20_i32)
             .x_label_area_size(40_i32)
             .y_label_area_size(40_i32)
             .build_cartesian_2d(
@@ -156,6 +151,11 @@ impl Plot<Vec<(f64, i32)>, Vec<(f64, i32)>> for Quadrants {
 
         scatter_ctx
             .configure_mesh()
+            .y_desc(format!(
+                "Number of stations within {} m of a population point",
+                self.distance_threshold
+            ))
+            .x_desc("Population of point")
             .disable_x_mesh()
             .disable_y_mesh()
             .draw()?;
