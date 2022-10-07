@@ -144,7 +144,7 @@ There are m population points, so searching for the nearest station for every po
 cd rust
 cargo b --release --bin quadrants
 # Usage: target/release/quadrant [X meters]
-target/release/quadrants 3000
+target/release/quadrants 1500
 ```
 
 ## Map of population points with normal population but high number of stops within X meters
@@ -153,8 +153,8 @@ target/release/quadrants 3000
 cd rust
 cargo b --release --bin quadrant_coords
 # Usage: target/release/quadrant_coords [city] [X meters] [point_type]
-target/release/quadrant_coords london 3000 red > ../data/london_reds.csv
-target/release/quadrant_coords tokyo 3000 red > ../data/tokyo_reds.csv
+target/release/quadrant_coords london 1500 red > ../data/london_reds.csv
+target/release/quadrant_coords tokyo 1500 red > ../data/tokyo_reds.csv
 
 cd ..
 python python/plot_significant_quadrants_map.py london reds
@@ -167,8 +167,8 @@ python python/plot_significant_quadrants_map.py tokyo reds
 cd rust
 cargo b --release --bin quadrant_coords
 # Usage: target/release/quadrant_coords [city] [X meters] [point_type]
-target/release/quadrant_coords london 3000 orange > ../data/london_oranges.csv
-target/release/quadrant_coords tokyo 3000 orange > ../data/tokyo_oranges.csv
+target/release/quadrant_coords london 1500 orange > ../data/london_oranges.csv
+target/release/quadrant_coords tokyo 1500 orange > ../data/tokyo_oranges.csv
 
 cd ..
 python python/plot_significant_quadrants_map.py london oranges
