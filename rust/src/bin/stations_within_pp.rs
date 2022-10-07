@@ -8,19 +8,21 @@ use std::{
 };
 
 fn main() {
-    let mut args = std::env::args();
+    for city in ["london", "tokyo"] {
+        let pp_path = format!("../data/{}_pp_meters.csv", city);
 
-    let (pp_path, stations_path) = if args.nth(1).unwrap() == "london" {
-        let pp_path = "../data/london_pp_meters.csv";
-        let stations_path =
-            "../data/london_trains/stations/station_coords_meters.csv";
-        (pp_path, stations_path)
-    } else {
-        let pp_path = "../data/tokyo_pp_meters.csv";
-        let stations_path = "../data/tokyo_trains/coords_meters.csv";
-        (pp_path, stations_path)
-    };
+        // TODO: fix this inconsistency...
+        let stations_path = if city == "london" {
+            "../data/london_trains/stations/station_coords_meters.csv"
+        } else {
+            "../data/tokyo_trains/coords_meters.csv"
+        };
 
+        inner_main(&pp_path, stations_path, format!("../out/{}_box.png", city));
+    }
+}
+
+fn inner_main(pp_path: &str, stations_path: &str, out_filename: String) {
     eprintln!("loading stations...");
     let stations = load_stations(stations_path);
 
@@ -37,10 +39,13 @@ fn main() {
         .filter(|line| !line.is_empty())
         .collect();
 
-    StationWithinPP::search_to_plot(&tree, &pp_lines);
+    let s = StationWithinPP { out_filename };
+    s.search_to_plot(&tree, &pp_lines);
 }
 
-struct StationWithinPP;
+struct StationWithinPP {
+    out_filename: String,
+}
 
 impl Search<Vec<i32>> for StationWithinPP {
     fn search_to_file(&self, tree: &RTree<(f64, f64)>, pp_lines: &[&str]) {
@@ -51,11 +56,7 @@ impl Search<Vec<i32>> for StationWithinPP {
 
         let dists: Vec<_> = (100..=3000).step_by(100).collect();
         dists.into_par_iter().for_each(|max_dist| {
-            let n_stations = Self::search(
-                tree,
-                pp_lines,
-                max_dist as f64,
-            );
+            let n_stations = Self::search(tree, pp_lines, max_dist as f64);
             let mut w = wtr.lock().unwrap();
             for num in n_stations {
                 w.write_record(&[format!("{}", max_dist), format!("{}", num)])
@@ -100,26 +101,23 @@ impl Search<Vec<i32>> for StationWithinPP {
 // but actual data collected is that result plus the distance threshold,
 // over multiple distances, which is T
 impl Plot<Vec<(i32, Vec<i32>)>, Vec<i32>> for StationWithinPP {
-    fn search_to_plot(tree: &RTree<(f64, f64)>, pp_lines: &[&str]) {
+    fn search_to_plot(&self, tree: &RTree<(f64, f64)>, pp_lines: &[&str]) {
         eprintln!("searching...");
         let data = Arc::new(Mutex::new(vec![]));
         let dists: Vec<_> = (100..=3000).step_by(100).collect();
         dists.into_par_iter().for_each(|max_dist| {
-            let n_stations = Self::search(
-                tree,
-                pp_lines,
-                max_dist as f64,
-            );
+            let n_stations = Self::search(tree, pp_lines, max_dist as f64);
             (*data.lock().unwrap()).push((max_dist, n_stations));
         });
         let data = Arc::try_unwrap(data).unwrap().into_inner().unwrap();
-        Self::plot(data).unwrap();
+        self.plot(data).unwrap();
     }
 
     fn plot(
+        &self,
         data: Vec<(i32, Vec<i32>)>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let root = BitMapBackend::new("../out/rust_b.png", (1024, 768))
+        let root = BitMapBackend::new(&self.out_filename, (1024, 768))
             .into_drawing_area();
 
         root.fill(&WHITE)?;

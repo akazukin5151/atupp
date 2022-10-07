@@ -10,19 +10,21 @@ use std::{
 };
 
 fn main() {
-    let mut args = std::env::args();
+    for city in ["london", "tokyo"] {
+        let pp_path = format!("../data/{}_pp_meters.csv", city);
 
-    let (pp_path, stations_path) = if args.nth(1).unwrap() == "london" {
-        let pp_path = "../data/london_pp_meters.csv";
-        let stations_path =
-            "../data/london_trains/stations/station_coords_meters.csv";
-        (pp_path, stations_path)
-    } else {
-        let pp_path = "../data/tokyo_pp_meters.csv";
-        let stations_path = "../data/tokyo_trains/coords_meters.csv";
-        (pp_path, stations_path)
-    };
+        // TODO: fix this inconsistency...
+        let stations_path = if city == "london" {
+            "../data/london_trains/stations/station_coords_meters.csv"
+        } else {
+            "../data/tokyo_trains/coords_meters.csv"
+        };
 
+        inner_main(&pp_path, stations_path, format!("../out/{}_quadrant.png", city));
+    }
+}
+
+fn inner_main(pp_path: &str, stations_path: &str, out_filename: String) {
     eprintln!("loading stations...");
     let stations = load_stations(stations_path);
 
@@ -39,10 +41,13 @@ fn main() {
         .filter(|line| !line.is_empty())
         .collect();
 
-    Quadrants::search_to_plot(&tree, &pp_lines);
+    let q = Quadrants { out_filename };
+    q.search_to_plot(&tree, &pp_lines);
 }
 
-struct Quadrants;
+struct Quadrants {
+    out_filename: String,
+}
 
 impl Search<Vec<(f64, i32)>> for Quadrants {
     fn search_to_file(&self, tree: &RTree<(f64, f64)>, pp_lines: &[&str]) {
@@ -93,18 +98,21 @@ impl Search<Vec<(f64, i32)>> for Quadrants {
 }
 
 impl Plot<Vec<(f64, i32)>, Vec<(f64, i32)>> for Quadrants {
-    fn search_to_plot(tree: &RTree<(f64, f64)>, pp_lines: &[&str]) {
+    fn search_to_plot(&self, tree: &RTree<(f64, f64)>, pp_lines: &[&str]) {
         eprintln!("searching...");
 
         let mut result = vec![];
         let n_stations = Self::search(tree, pp_lines, 500.);
         result.extend(n_stations);
 
-        Self::plot(result).unwrap();
+        self.plot(result).unwrap();
     }
 
-    fn plot(data: Vec<(f64, i32)>) -> Result<(), Box<dyn std::error::Error>> {
-        let root = BitMapBackend::new("../out/rust_q.png", (1024, 768))
+    fn plot(
+        &self,
+        data: Vec<(f64, i32)>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let root = BitMapBackend::new(&self.out_filename, (1024, 768))
             .into_drawing_area();
 
         root.fill(&WHITE)?;

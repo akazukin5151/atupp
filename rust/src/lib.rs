@@ -40,10 +40,10 @@ pub trait Search<T> {
 pub trait Plot<T, U>: Search<U> {
     /// Search the tree and immediately plot the results with rust.
     /// Use when python cannot handle the amount of data
-    fn search_to_plot(tree: &RTree<(f64, f64)>, pp_lines: &[&str]);
+    fn search_to_plot(&self, tree: &RTree<(f64, f64)>, pp_lines: &[&str]);
 
     /// The function that does the plotting
-    fn plot(data: T) -> Result<(), Box<dyn std::error::Error>>;
+    fn plot(&self, data: T) -> Result<(), Box<dyn std::error::Error>>;
 }
 
 // TODO: use serde
