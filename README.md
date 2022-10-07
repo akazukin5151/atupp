@@ -152,12 +152,25 @@ target/release/quadrants 3000
 ```sh
 cd rust
 cargo b --release --bin quadrant_coords
-# Usage: target/release/quadrant_coords [city] [X meters]
-target/release/quadrant_coords london 3000 > ../data/london_reds.csv
-target/release/quadrant_coords tokyo 3000 > ../data/tokyo_reds.csv
+# Usage: target/release/quadrant_coords [city] [X meters] [point_type]
+target/release/quadrant_coords london 3000 red > ../data/london_reds.csv
+target/release/quadrant_coords tokyo 3000 red > ../data/tokyo_reds.csv
 
 cd ..
-python python/plot_reds_map.py london
-python python/plot_reds_map.py tokyo
+python python/plot_significant_quadrants_map.py london reds
+python python/plot_significant_quadrants_map.py tokyo reds
 ```
 
+## Map of population points with high population but low number of stops within X meters
+
+```sh
+cd rust
+cargo b --release --bin quadrant_coords
+# Usage: target/release/quadrant_coords [city] [X meters] [point_type]
+target/release/quadrant_coords london 3000 orange > ../data/london_oranges.csv
+target/release/quadrant_coords tokyo 3000 orange > ../data/tokyo_oranges.csv
+
+cd ..
+python python/plot_significant_quadrants_map.py london oranges
+python python/plot_significant_quadrants_map.py tokyo oranges
+```

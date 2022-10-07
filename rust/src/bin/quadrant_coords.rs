@@ -1,4 +1,4 @@
-// Usage: target/release/quadrant_coords [city] [X meters]
+// Usage: target/release/quadrant_coords [city] [X meters] [point_type]
 
 use plotters::prelude::Quartiles;
 use rayon::prelude::*;
@@ -9,10 +9,21 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+enum PointType {
+    Red,
+    Orange,
+}
+
 fn main() {
     let args: Vec<_> = std::env::args().collect();
     let city = &args[1];
     let distance_threshold = args[2].parse().unwrap();
+    let filter_by = &args[3];
+    let point_type = if filter_by == "red" {
+        PointType::Red
+    } else {
+        PointType::Orange
+    };
 
     let pp_path = format!("../data/{}_pp_meters.csv", city);
 
@@ -23,13 +34,14 @@ fn main() {
         "../data/tokyo_trains/coords_meters.csv"
     };
 
-    inner_main(&pp_path, stations_path, distance_threshold);
+    inner_main(&pp_path, stations_path, distance_threshold, point_type);
 }
 
 fn inner_main(
     pp_path: &str,
     stations_path: &str,
     distance_threshold: f64,
+    point_type: PointType,
 ) {
     eprintln!("loading stations...");
     let stations = load_stations(stations_path);
@@ -74,6 +86,7 @@ fn inner_main(
         pop_q3,
         n_stations_q3,
         distance_threshold,
+        point_type,
     };
     q.search_to_file(&tree, &pp_lines);
 }
@@ -82,6 +95,7 @@ struct QuadrantCoords {
     pop_q3: f64,
     n_stations_q3: f64,
     distance_threshold: f64,
+    point_type: PointType,
 }
 
 fn count_n_stations(
@@ -155,13 +169,20 @@ impl Search<Vec<(f64, f64)>> for QuadrantCoords {
                 n_stations += 1;
             }
             // points with normal population but lots of stations
-            if pop <= self.pop_q3 && (n_stations as f64) >= self.n_stations_q3 {
-                (*pop_within_dist.lock().unwrap()).push((x, y));
+            if matches!(self.point_type, PointType::Red) {
+                if pop <= self.pop_q3
+                    && (n_stations as f64) >= self.n_stations_q3
+                {
+                    (*pop_within_dist.lock().unwrap()).push((x, y));
+                }
+            } else {
+                // points with high population but few stations
+                if pop >= self.pop_q3
+                    && (n_stations as f64) <= self.n_stations_q3
+                {
+                    (*pop_within_dist.lock().unwrap()).push((x, y));
+                }
             }
-            // TODO: points with high population but few stations
-            //if pop >= self.pop_q3 && (n_stations as f64) <= self.n_stations_q3 {
-            //    (*pop_within_dist.lock().unwrap()).push((x, y));
-            //}
         });
 
         Arc::try_unwrap(pop_within_dist)
