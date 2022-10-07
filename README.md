@@ -149,8 +149,8 @@ target/release/quadrants 3000
 cd rust
 cargo b --release --bin quadrant_coords
 # Usage:
-# target/release/quadrant_coords [city] [X meters] [Q3 of population] [Q3 of n_stations]
-target/release/quadrant_coords london 3000 10.608587 3.0 > ../data/london_reds.csv
-target/release/quadrant_coords tokyo 3000 8.678337 2.0 > ../data/tokyo_reds.csv
+# target/release/quadrant_coords [city] [X meters] [Q3 of n_stations]
+target/release/quadrant_coords london 3000 3.0 > ../data/london_reds.csv
+target/release/quadrant_coords tokyo 3000 2.0 > ../data/tokyo_reds.csv
 ```
 

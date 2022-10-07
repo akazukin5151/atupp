@@ -1,3 +1,4 @@
+use plotters::prelude::Quartiles;
 use rayon::prelude::*;
 use rstar::RTree;
 use src::{load_stations, parse_csv_line, Search};
@@ -10,8 +11,7 @@ fn main() {
     let args: Vec<_> = std::env::args().collect();
     let city = &args[1];
     let distance_threshold = args[2].parse().unwrap();
-    let pop_q3 = args[3].parse().unwrap();
-    let n_stations_q3 = args[4].parse().unwrap();
+    let n_stations_q3 = args[3].parse().unwrap();
 
     let pp_path = format!("../data/{}_pp_meters.csv", city);
 
@@ -25,7 +25,6 @@ fn main() {
     inner_main(
         &pp_path,
         stations_path,
-        pop_q3,
         n_stations_q3,
         distance_threshold,
     );
@@ -34,7 +33,6 @@ fn main() {
 fn inner_main(
     pp_path: &str,
     stations_path: &str,
-    pop_q3: f64,
     n_stations_q3: f64,
     distance_threshold: f64,
 ) {
@@ -54,6 +52,20 @@ fn inner_main(
         .filter(|line| !line.is_empty())
         .collect();
 
+    // TODO: for better code quality, pass this to the trait functions
+    // so that the parsing isn't duplicated. in practice it doesn't
+    // have a noticable impact on speed so not highest priority
+    let populations: Vec<_> = pp_lines.clone().into_par_iter().map(|pp_line| {
+        let xs = parse_csv_line(pp_line);
+
+        // a line in pp looks like this
+        // lat/lon, lat/lon, pop, x, y
+        let pop: f64 = xs[2].parse().unwrap();
+        pop
+    }).collect();
+
+    let pop_q3 = Quartiles::new(&populations).values()[3] as f64;
+
     let q = QuadrantCoords {
         pop_q3,
         n_stations_q3,
@@ -64,7 +76,6 @@ fn inner_main(
 
 struct QuadrantCoords {
     // TODO: calculate this without manual input
-    // population Q3 does not require calculation, can be done once pp is read in
     // all n_stations needs to be counted first, then calculate Q3
     // one pass to do that count, calculate Q3, second pass to filter based on Q3
     pop_q3: f64,
