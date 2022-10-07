@@ -101,14 +101,25 @@ impl Search<Vec<i32>> for StationWithinPP {
 // the result of the search function is Vec<i32> (U),
 // but actual data collected is that result plus the distance threshold,
 // over multiple distances, which is T
-impl Plot<Vec<(i32, Vec<i32>)>, Vec<i32>> for StationWithinPP {
+impl Plot<Vec<(i32, Vec<i32>, Vec<i32>)>, Vec<i32>> for StationWithinPP {
     fn search_to_plot(&self, tree: &RTree<(f64, f64)>, pp_lines: &[&str]) {
         eprintln!("searching...");
         let data = Arc::new(Mutex::new(vec![]));
         let dists: Vec<_> = (100..=3000).step_by(100).collect();
         dists.into_par_iter().for_each(|max_dist| {
             let n_stations = self.search(tree, pp_lines, max_dist as f64);
-            (*data.lock().unwrap()).push((max_dist, n_stations));
+            let quartiles = Quartiles::new(&n_stations);
+            let lower = quartiles.values()[0];
+            let upper = quartiles.values()[4];
+            let outliers: Vec<_> = n_stations
+                .iter()
+                .filter(|x| {
+                    let x = **x as f32;
+                    x < lower || x > upper
+                })
+                .cloned()
+                .collect();
+            (*data.lock().unwrap()).push((max_dist, n_stations, outliers));
         });
         let data = Arc::try_unwrap(data).unwrap().into_inner().unwrap();
         self.plot(data).unwrap();
@@ -116,7 +127,7 @@ impl Plot<Vec<(i32, Vec<i32>)>, Vec<i32>> for StationWithinPP {
 
     fn plot(
         &self,
-        data: Vec<(i32, Vec<i32>)>,
+        data: Vec<(i32, Vec<i32>, Vec<i32>)>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let root = BitMapBackend::new(&self.out_filename, (1024, 768))
             .into_drawing_area();
@@ -125,7 +136,7 @@ impl Plot<Vec<(i32, Vec<i32>)>, Vec<i32>> for StationWithinPP {
 
         let max_y_value: f32 = *data
             .iter()
-            .map(|(_, n_stations)| n_stations.iter().max().unwrap_or(&0))
+            .map(|(_, n_stations, _)| n_stations.iter().max().unwrap_or(&0))
             .max()
             .unwrap_or(&0) as f32;
 
@@ -141,11 +152,17 @@ impl Plot<Vec<(i32, Vec<i32>)>, Vec<i32>> for StationWithinPP {
             .draw()?;
 
         scatter_ctx.draw_series(data.iter().map(
-            |(distance, n_stations)| {
+            |(distance, n_stations, _)| {
                 let n_stations_quartiles = Quartiles::new(n_stations);
                 Boxplot::new_vertical(*distance, &n_stations_quartiles)
             },
         ))?;
+
+        scatter_ctx.draw_series(data.iter().flat_map(|(max_dist, _, outliers)| {
+            outliers.iter().map(|y_value| {
+                Circle::new((*max_dist, *y_value as f32), 2_i32, GREEN.filled())
+            })
+        }))?;
 
         root.present().unwrap();
 
