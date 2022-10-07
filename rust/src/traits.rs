@@ -23,6 +23,7 @@ pub trait Search<T> {
     /// - the population of every point and the number of stations within
     ///   max_distance of it
     fn search(
+        &self,
         tree: &RTree<(f64, f64)>,
         pp_lines: &[&str],
         max_distance: f64,

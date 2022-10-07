@@ -56,7 +56,7 @@ impl Search<Vec<i32>> for StationWithinPP {
 
         let dists: Vec<_> = (100..=3000).step_by(100).collect();
         dists.into_par_iter().for_each(|max_dist| {
-            let n_stations = Self::search(tree, pp_lines, max_dist as f64);
+            let n_stations = self.search(tree, pp_lines, max_dist as f64);
             let mut w = wtr.lock().unwrap();
             for num in n_stations {
                 w.write_record(&[format!("{}", max_dist), format!("{}", num)])
@@ -66,6 +66,7 @@ impl Search<Vec<i32>> for StationWithinPP {
     }
 
     fn search(
+        &self,
         tree: &RTree<(f64, f64)>,
         pp_lines: &[&str],
         max_distance: f64,
@@ -106,7 +107,7 @@ impl Plot<Vec<(i32, Vec<i32>)>, Vec<i32>> for StationWithinPP {
         let data = Arc::new(Mutex::new(vec![]));
         let dists: Vec<_> = (100..=3000).step_by(100).collect();
         dists.into_par_iter().for_each(|max_dist| {
-            let n_stations = Self::search(tree, pp_lines, max_dist as f64);
+            let n_stations = self.search(tree, pp_lines, max_dist as f64);
             (*data.lock().unwrap()).push((max_dist, n_stations));
         });
         let data = Arc::try_unwrap(data).unwrap().into_inner().unwrap();

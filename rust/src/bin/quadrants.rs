@@ -73,7 +73,7 @@ impl Search<Vec<(f64, i32)>> for Quadrants {
         wtr.write_record(&["population", "n_stations"]).unwrap();
         let wtr = Arc::new(Mutex::new(wtr));
 
-        let n_stations = Self::search(tree, pp_lines, self.distance_threshold);
+        let n_stations = self.search(tree, pp_lines, self.distance_threshold);
         let mut w = wtr.lock().unwrap();
         for (pop, n_stations) in n_stations {
             w.write_record(&[format!("{}", pop), format!("{}", n_stations)])
@@ -82,6 +82,7 @@ impl Search<Vec<(f64, i32)>> for Quadrants {
     }
 
     fn search(
+        &self,
         tree: &RTree<(f64, f64)>,
         pp_lines: &[&str],
         max_distance: f64,
@@ -117,7 +118,7 @@ impl Search<Vec<(f64, i32)>> for Quadrants {
 impl Plot<Vec<(f64, i32)>, Vec<(f64, i32)>> for Quadrants {
     fn search_to_plot(&self, tree: &RTree<(f64, f64)>, pp_lines: &[&str]) {
         eprintln!("searching...");
-        let result = Self::search(tree, pp_lines, self.distance_threshold);
+        let result = self.search(tree, pp_lines, self.distance_threshold);
         self.plot(result).unwrap();
     }
 
