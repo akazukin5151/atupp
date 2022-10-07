@@ -140,5 +140,5 @@ There are m population points, so searching for the nearest station for every po
 ```sh
 cd rust
 cargo b --release --bin quadrants
-target/release/quadrants
+target/release/quadrants 3000
 ```

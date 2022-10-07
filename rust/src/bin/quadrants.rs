@@ -10,6 +10,9 @@ use std::{
 };
 
 fn main() {
+    let mut args = std::env::args();
+    let distance_threshold = args.nth(1).unwrap().parse().unwrap();
+
     for city in ["london", "tokyo"] {
         let pp_path = format!("../data/{}_pp_meters.csv", city);
 
@@ -20,11 +23,21 @@ fn main() {
             "../data/tokyo_trains/coords_meters.csv"
         };
 
-        inner_main(&pp_path, stations_path, format!("../out/{}_quadrant.png", city));
+        inner_main(
+            &pp_path,
+            stations_path,
+            format!("../out/{}_quadrant.png", city),
+            distance_threshold,
+        );
     }
 }
 
-fn inner_main(pp_path: &str, stations_path: &str, out_filename: String) {
+fn inner_main(
+    pp_path: &str,
+    stations_path: &str,
+    out_filename: String,
+    distance_threshold: f64,
+) {
     eprintln!("loading stations...");
     let stations = load_stations(stations_path);
 
@@ -41,12 +54,16 @@ fn inner_main(pp_path: &str, stations_path: &str, out_filename: String) {
         .filter(|line| !line.is_empty())
         .collect();
 
-    let q = Quadrants { out_filename };
+    let q = Quadrants {
+        out_filename,
+        distance_threshold,
+    };
     q.search_to_plot(&tree, &pp_lines);
 }
 
 struct Quadrants {
     out_filename: String,
+    distance_threshold: f64,
 }
 
 impl Search<Vec<(f64, i32)>> for Quadrants {
@@ -56,7 +73,7 @@ impl Search<Vec<(f64, i32)>> for Quadrants {
         wtr.write_record(&["population", "n_stations"]).unwrap();
         let wtr = Arc::new(Mutex::new(wtr));
 
-        let n_stations = Self::search(tree, pp_lines, 500.);
+        let n_stations = Self::search(tree, pp_lines, self.distance_threshold);
         let mut w = wtr.lock().unwrap();
         for (pop, n_stations) in n_stations {
             w.write_record(&[format!("{}", pop), format!("{}", n_stations)])
@@ -100,11 +117,7 @@ impl Search<Vec<(f64, i32)>> for Quadrants {
 impl Plot<Vec<(f64, i32)>, Vec<(f64, i32)>> for Quadrants {
     fn search_to_plot(&self, tree: &RTree<(f64, f64)>, pp_lines: &[&str]) {
         eprintln!("searching...");
-
-        let mut result = vec![];
-        let n_stations = Self::search(tree, pp_lines, 500.);
-        result.extend(n_stations);
-
+        let result = Self::search(tree, pp_lines, self.distance_threshold);
         self.plot(result).unwrap();
     }
 
