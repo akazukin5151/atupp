@@ -2,13 +2,14 @@
 
 use plotters::{
     prelude::*,
-    style::full_palette::{GREY, ORANGE},
+    style::full_palette::ORANGE,
 };
 use rayon::prelude::*;
 use rstar::RTree;
 use src::{
     load_stations, parse_csv_line, plot_hline, plot_vline, Plot, Search,
 };
+use std::cmp::Ordering;
 use std::{
     fs, io,
     sync::{Arc, Mutex},
@@ -160,12 +161,21 @@ impl Plot<Vec<(f64, i32)>, Vec<(f64, i32)>> for Quadrants {
             .draw()?;
 
         scatter_ctx.draw_series(data.iter().map(|(x, y)| {
-            let color = if x <= &(pop_q3 as f64) && *y as f32 > n_stations_q3 {
-                RED.filled()
-            } else if x > &(pop_q3 as f64) && *y as f32 <= n_stations_q3 {
-                ORANGE.filled()
-            } else {
-                GREY.filled()
+            let pq3 = &(pop_q3 as f64);
+            let y_ = *y as f32;
+            let color = match (
+                x.partial_cmp(pq3).unwrap(),
+                y_.partial_cmp(&n_stations_q3).unwrap(),
+            ) {
+                (Ordering::Less, Ordering::Greater) => RED.filled(),
+                (Ordering::Equal, Ordering::Greater) => RED.filled(),
+                (Ordering::Greater, Ordering::Less) => ORANGE.filled(),
+                (Ordering::Greater, Ordering::Equal) => ORANGE.filled(),
+                (Ordering::Less, Ordering::Less) => GREEN.filled(),
+                (Ordering::Equal, Ordering::Less) => GREEN.filled(),
+                (Ordering::Less, Ordering::Equal) => GREEN.filled(),
+                (Ordering::Greater, Ordering::Greater) => BLUE.filled(),
+                (Ordering::Equal, Ordering::Equal) => BLUE.filled(),
             };
             Circle::new((*x, *y), 2_i32, color)
         }))?;
