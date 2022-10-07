@@ -155,5 +155,9 @@ cargo b --release --bin quadrant_coords
 # Usage: target/release/quadrant_coords [city] [X meters]
 target/release/quadrant_coords london 3000 > ../data/london_reds.csv
 target/release/quadrant_coords tokyo 3000 > ../data/tokyo_reds.csv
+
+cd ..
+python python/plot_reds_map.py london
+python python/plot_reds_map.py tokyo
 ```
 
