@@ -152,6 +152,8 @@ impl Plot<Vec<(f64, i32)>, Vec<(f64, i32)>> for Quadrants {
 
         let populations: Vec<_> = data.iter().map(|x| x.0).collect();
         let pop_q3 = Quartiles::new(&populations).values()[3];
+        // TODO: draw text on the plot
+        dbg!(pop_q3);
         plot_vline(
             &root,
             &scatter_ctx,
