@@ -1,4 +1,4 @@
-# Analysing transportation using population points
+# atupp - Analysing transportation using population points
 
 Based on [my paper here](https://github.com/akazukin5151/papers/blob/main/6SSG3077_CW2_1931393.pdf)
 
