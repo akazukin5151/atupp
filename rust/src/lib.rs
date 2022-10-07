@@ -76,6 +76,7 @@ pub fn load_stations(path: &str) -> Vec<(f64, f64)> {
         .collect()
 }
 
+// adapted from my previous project train-passenger-distribution
 pub type Chart<'a, 'b> = ChartContext<
     'a,
     BitMapBackend<'b>,
