@@ -20,19 +20,19 @@ London: Box plot of number of stations that are within a certain distance from a
 
 Tokyo: Box plot of number of stations that are within a certain distance from a population point.
 
-![london_quadrant](london_quadrant.png)
+![london_quadrant](examples/london_quadrant.png)
 
 London: Scatterplot of the number of stations that are within 500m of a population point, and its population
 
-![tokyo_quadrant](tokyo_quadrant.png)
+![tokyo_quadrant](examples/tokyo_quadrant.png)
 
 Tokyo: Scatterplot of the number of stations that are within 500m of a population point, and its population
 
-![london_quadrants_map](london_quadrants_map.png)
+![london_quadrants_map](examples/london_quadrants_map.png)
 
 London: map of the population points coloured by its quadrants in the scatterplot above
 
-![tokyo_quadrants_map](tokyo_quadrants_map.png)
+![tokyo_quadrants_map](examples/tokyo_quadrants_map.png)
 
 Tokyo: map of the population points coloured by its quadrants in the scatterplot above
 
