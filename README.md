@@ -24,17 +24,17 @@ For both cities, most population points have zero stations near it. The minority
 
 ![london_quadrant](examples/london_quadrant.png)
 
-There are two lines dividing the plot. The vertical line represents the 3rd quartile of the population of the points. The horizontal line represents the 3rd quartile of the number of stations, which is 0 stations at 500 meters. The points are coloured based on their quadrant. Red points are those with a "normal" population but high number of stations near it. Orange points are those with high population but low number of stations near it. Blue points are those with both high population and high number of stations near it. Green points are those with both low population and low number of stations near it.
+There are two lines dividing the plot. The vertical line represents the 3rd quartile of the population of the points. The horizontal line represents the 3rd quartile of the number of stations, which is 0 stations at 1400 meters. The points are coloured based on their quadrant. Red points are those with a "normal" population but high number of stations near it. Orange points are those with high population but low number of stations near it. Blue points are those with both high population and high number of stations near it. Green points are those with both low population and low number of stations near it.
 
-London: Scatterplot of the number of stations that are within 500m of a population point, and its population.
+London: Scatterplot of the number of stations that are within 1400m of a population point, and its population.
 
 ![tokyo_quadrant](examples/tokyo_quadrant.png)
 
-Tokyo: Scatterplot of the number of stations that are within 500m of a population point, and its population
+Tokyo: Scatterplot of the number of stations that are within 1400m of a population point, and its population
 
 ![london_quadrants_map](examples/london_quadrants_map.png)
 
-London: map of the population points coloured by its quadrants in the scatterplot above. The red points closely follow the tube stations. There is not a lot of people that live 500m within a station, so it is low population but "high" number of stations near it. The blue points also follow tube stations but closer to the city center, which makes sense as the population are higher nearer the center. Most of London is yellow or green - that is, with few stations close by, regardless of population. Yellow is for high population and green is for low population, which is why yellow points are tend to be more central than green, which is properly "rural".
+London: map of the population points coloured by its quadrants in the scatterplot above. The red points closely follow the tube stations. There is not a lot of people that live 1400m within a station, so it is low population but "high" number of stations near it. The blue points also follow tube stations but closer to the city center, which makes sense as the population are higher nearer the center. Most of London is yellow or green - that is, with few stations close by, regardless of population. Yellow is for high population and green is for low population, which is why yellow points are tend to be more central than green, which is properly "rural".
 
 ![tokyo_quadrants_map](examples/tokyo_quadrants_map.png)
 
@@ -162,7 +162,7 @@ Calculating distances requires the coordinates to be in meters rather than lat/l
 
 # Analysis
 
-## Cumulative population within a certain distance of a train station
+## Barplot: cumulative population within a certain distance of a train station
 
 ```sh
 cd rust
@@ -174,7 +174,7 @@ cd ..
 python python/plot_props.py
 ```
 
-## Stations within population points
+## Boxplot: stations within population points
 
 ```sh
 cd rust
@@ -190,28 +190,30 @@ This program uses a R\* tree, which is O(log(n)) for searching, and O(n\*log(n))
 
 There are m population points, so searching for the nearest station for every population point is O(m\*log(n)). The number of population points m >>> number of stations n, m >>> log(n), so it's basically O(m). This is significantly faster than O(n\*m).
 
-## Population points and number of stations within X meters of the points
+## Scatterplot with quadrants: Population points and number of stations within X meters of the points
+
+We choose 1400 meters here because this is the closest distance where the Q3 of number of stations within 1400 meters is higher than 1, for both cities
 
 ```sh
 cd rust
 cargo b --release --bin quadrants
 # Usage: target/release/quadrant [X meters]
-target/release/quadrants 500
+target/release/quadrants 1400
 ```
 
 ## Map of all population points, colored by their quadrant
 
 ```sh
 cd rust
-target/release/quadrant_coords london 500 red > ../data/london_reds.csv
-target/release/quadrant_coords london 500 orange > ../data/london_oranges.csv
-target/release/quadrant_coords london 500 blue > ../data/london_blues.csv
-target/release/quadrant_coords london 500 green > ../data/london_greens.csv
+target/release/quadrant_coords london 1400 red > ../data/london_reds.csv
+target/release/quadrant_coords london 1400 orange > ../data/london_oranges.csv
+target/release/quadrant_coords london 1400 blue > ../data/london_blues.csv
+target/release/quadrant_coords london 1400 green > ../data/london_greens.csv
 
-target/release/quadrant_coords tokyo 500 red > ../data/tokyo_reds.csv
-target/release/quadrant_coords tokyo 500 orange > ../data/tokyo_oranges.csv
-target/release/quadrant_coords tokyo 500 blue > ../data/tokyo_blues.csv
-target/release/quadrant_coords tokyo 500 green > ../data/tokyo_greens.csv
+target/release/quadrant_coords tokyo 1400 red > ../data/tokyo_reds.csv
+target/release/quadrant_coords tokyo 1400 orange > ../data/tokyo_oranges.csv
+target/release/quadrant_coords tokyo 1400 blue > ../data/tokyo_blues.csv
+target/release/quadrant_coords tokyo 1400 green > ../data/tokyo_greens.csv
 
 cd ..
 python python/plot_quadrants_map.py london
@@ -223,8 +225,8 @@ The individual quadrants can be mapped alone as well:
 ```sh
 cargo b --release --bin quadrant_coords
 # Usage: target/release/quadrant_coords [city] [X meters] [point_type]
-target/release/quadrant_coords london 500 red > ../data/london_reds.csv
-target/release/quadrant_coords tokyo 500 red > ../data/tokyo_reds.csv
+target/release/quadrant_coords london 1400 red > ../data/london_reds.csv
+target/release/quadrant_coords tokyo 1400 red > ../data/tokyo_reds.csv
 
 cd ..
 python python/plot_significant_quadrants_map.py london reds

@@ -1,5 +1,6 @@
 // Usage: target/release/quadrant [X meters]
 
+use plotters::style::full_palette::GREY;
 use plotters::{prelude::*, style::full_palette::ORANGE};
 use rayon::prelude::*;
 use rstar::RTree;
@@ -138,15 +139,22 @@ impl Plot<Vec<(f64, i32)>, Vec<(f64, i32)>> for Quadrants {
             .into_drawing_area();
 
         root.fill(&WHITE)?;
+        let roots = root.split_by_breakpoints([10_i32], [668_i32]);
+        let left_box_area = &roots[0];
+        let scatterplot_area = &roots[1];
+        let bottom_box_area = &roots[3];
+        //let (upper, bottom_box_area) = root.split_vertically(668);
+        //let (left_box_area, scatterplot_area) = upper.split_horizontally(10);
 
         let max_x_value = data.iter().map(|x| x.0).fold(f64::NAN, f64::max);
-        let mut scatter_ctx = ChartBuilder::on(&root)
+        let max_y_value = data.iter().map(|x| x.1).max().unwrap();
+        let mut scatter_ctx = ChartBuilder::on(scatterplot_area)
             .margin(20_i32)
             .x_label_area_size(40_i32)
             .y_label_area_size(40_i32)
             .build_cartesian_2d(
                 0_f64..max_x_value,
-                0..data.iter().map(|x| x.1).max().unwrap(),
+                0..max_y_value,
             )?;
 
         scatter_ctx
@@ -155,7 +163,7 @@ impl Plot<Vec<(f64, i32)>, Vec<(f64, i32)>> for Quadrants {
                 "Number of stations within {} m of a population point",
                 self.distance_threshold
             ))
-            .x_desc("Population of point")
+            .axis_desc_style(("sans-serif", 20_i32).into_text_style(scatterplot_area))
             .disable_x_mesh()
             .disable_y_mesh()
             .draw()?;
@@ -181,7 +189,7 @@ impl Plot<Vec<(f64, i32)>, Vec<(f64, i32)>> for Quadrants {
         }))?;
 
         plot_vline(
-            &root,
+            scatterplot_area,
             &scatter_ctx,
             pop_q3.into(),
             0,
@@ -191,7 +199,7 @@ impl Plot<Vec<(f64, i32)>, Vec<(f64, i32)>> for Quadrants {
         .unwrap();
 
         plot_hline(
-            &root,
+            scatterplot_area,
             &scatter_ctx,
             n_stations_q3 as i32,
             0,
@@ -199,6 +207,68 @@ impl Plot<Vec<(f64, i32)>, Vec<(f64, i32)>> for Quadrants {
             BLUE.filled(),
         )
         .unwrap();
+
+        let mut chart = ChartBuilder::on(bottom_box_area)
+            .margin(20_i32)
+            .margin_top(0)
+            .x_label_area_size(40_i32)
+            .y_label_area_size(40_i32)
+            .build_cartesian_2d(0_f32..(max_x_value as f32), 0..2_i32)?;
+
+        chart
+            .configure_mesh()
+            .x_desc("Population of point")
+            .axis_desc_style(("sans-serif", 20_i32).into_text_style(bottom_box_area))
+            .disable_x_mesh()
+            .disable_y_mesh()
+            .draw()?;
+
+        let pops: Vec<_> = data.iter().map(|x| x.0).collect();
+        let pop_quartiles = Quartiles::new(&pops);
+        let boxplot = Boxplot::new_horizontal(1, &pop_quartiles).width(20);
+        chart.draw_series([boxplot])?;
+
+        // TODO: copied from stations_within_pp.rs
+        let lower = pop_quartiles.values()[0];
+        let upper = pop_quartiles.values()[4];
+        let outliers = pops.iter().filter(|x| {
+            let x = **x as f32;
+            x < lower || x > upper
+        });
+        chart
+            .draw_series(outliers.map(|x| {
+                Circle::new((*x as f32, 1_i32), 2_i32, GREY.filled())
+            }))?;
+
+        let mut chart = ChartBuilder::on(left_box_area)
+            .margin(20_i32)
+            .margin_right(0_i32)
+            .x_label_area_size(40_i32)
+            .y_label_area_size(40_i32)
+            .build_cartesian_2d(0..2_i32, 0_f32..(max_y_value as f32))?;
+
+        chart
+            .configure_mesh()
+            .disable_x_mesh()
+            .disable_y_mesh()
+            .draw()?;
+
+        let n_stations: Vec<_> = data.iter().map(|x| x.1).collect();
+        let n_stations_quartiles = Quartiles::new(&n_stations);
+        let boxplot = Boxplot::new_vertical(1, &n_stations_quartiles).width(20);
+        chart.draw_series([boxplot])?;
+
+        // TODO: copied from stations_within_pp.rs
+        let lower = n_stations_quartiles.values()[0];
+        let upper = n_stations_quartiles.values()[4];
+        let outliers = n_stations.iter().filter(|x| {
+            let x = **x as f32;
+            x < lower || x > upper
+        });
+        chart
+            .draw_series(outliers.map(|x| {
+                Circle::new((1_i32, *x as f32), 2_i32, GREY.filled())
+            }))?;
 
         root.present().unwrap();
 

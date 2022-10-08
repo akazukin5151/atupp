@@ -22,7 +22,7 @@ grays['y'] = grays['y'].astype(float)
 
 df = None
 
-for point_type in {'red', 'orange', 'blue', 'green'}:
+for point_type in ('red', 'orange', 'blue', 'green'):
     color_df = main(ax, city, point_type)
     if df is None:
         df = color_df
