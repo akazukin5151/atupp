@@ -10,7 +10,7 @@ Python couldn't handle it so I used Rust. But I again reached a point where usin
 
 ![props](examples/props.png)
 
-Proportion of city population that is within a certain distance from at least one train station
+Proportion of city population that is within a certain distance from at least one train station. Read: around 30% of London's population is within 1100 meters of a station, compared to around 43% for Tokyo.
 
 ![london_box](examples/london_box.png)
 
@@ -20,9 +20,13 @@ London: Box plot of number of stations that are within a certain distance from a
 
 Tokyo: Box plot of number of stations that are within a certain distance from a population point.
 
+For both cities, most population points have zero stations near it. The minority that do, mostly has two stations near it. There is a very small number of points that has a lot of stations near it.
+
 ![london_quadrant](examples/london_quadrant.png)
 
-London: Scatterplot of the number of stations that are within 500m of a population point, and its population
+There are two lines dividing the plot. The vertical line represents the 3rd quartile of the population of the points. The horizontal line represents the 3rd quartile of the number of stations, which is 0 stations at 500 meters. The points are coloured based on their quadrant. Red points are those with a "normal" population but high number of stations near it. Orange points are those with high population but low number of stations near it. Blue points are those with both high population and high number of stations near it. Green points are those with both low population and low number of stations near it.
+
+London: Scatterplot of the number of stations that are within 500m of a population point, and its population.
 
 ![tokyo_quadrant](examples/tokyo_quadrant.png)
 
@@ -30,11 +34,11 @@ Tokyo: Scatterplot of the number of stations that are within 500m of a populatio
 
 ![london_quadrants_map](examples/london_quadrants_map.png)
 
-London: map of the population points coloured by its quadrants in the scatterplot above
+London: map of the population points coloured by its quadrants in the scatterplot above. The red points closely follow the tube stations. There is not a lot of people that live 500m within a station, so it is low population but "high" number of stations near it. The blue points also follow tube stations but closer to the city center, which makes sense as the population are higher nearer the center. Most of London is yellow or green - that is, with few stations close by, regardless of population. Yellow is for high population and green is for low population, which is why yellow points are tend to be more central than green, which is properly "rural".
 
 ![tokyo_quadrants_map](examples/tokyo_quadrants_map.png)
 
-Tokyo: map of the population points coloured by its quadrants in the scatterplot above
+Tokyo: map of the population points coloured by its quadrants in the scatterplot above. The red points also closely matches the train stations, except for central Tokyo. The red quadrant indicates points with normal population, which excludes the high population points in the urban center. The other differentiator is "high" number of stations near it, so it obviously will coalesce around train stations. Green points are also normal population but without stations nearby, which is everywhere else except for the urban center. There is one exemption for the red points - the imperial residence in the center of the city. Both yellow and blue points indicate high population. The blue points are more concentrated in the urban center, which has higher population, and is roughly Tokyo Prefecture, Kanagawa Prefecture, and some cities in Chiba and Saitama Prefectures. The yellow points are the "suburban" places, including more of Saitama and the northern portion of the Kanto Plain.
 
 # Data sources
 
@@ -143,7 +147,7 @@ target/release/clip_pp tokyo > ../data/tokyo_pp.csv
 
 It reads the entire population point file into memory, then splits up the file to process the bits in parallel across multiple CPUs. To avoid accumulating a potentially huge result, it writes the results immediately after calculating it. To simplify things, writing is done by printing to stdout instead of writing to a file. Use a UNIX pipe to divert stdout to a file. Rust already uses a mutex when writing to stdout, so there are no race conditions.
 
-This is the first step that takes significant time (28 minutes for Tokyo). Technically the city boundaries are multi-polygons so every polygon is compared, but in practice the number of population points dominates and it is always possible to dissolve the multi-polygons into one.
+This is the first step that takes significant time (10 minutes for London, 28 minutes for Tokyo). Technically the city boundaries are multi-polygons so every polygon is compared, but in practice the number of population points dominates and it is always possible to dissolve the multi-polygons into one.
 
 ## Reproject stations and population points into WGS84, Pseudo-Mercator, EPSG:3857
 
