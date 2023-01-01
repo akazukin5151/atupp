@@ -24,9 +24,9 @@ For both cities, most population points have zero stations near it. The minority
 
 ![london_quadrant](examples/london_quadrant.png)
 
-There are two lines dividing the plot. The vertical line represents the 3rd quartile of the population of the points. The horizontal line represents the 3rd quartile of the number of stations, which is 0 stations at 1400 meters. The points are coloured based on their quadrant. Red points are those with a "normal" population but high number of stations near it. Orange points are those with high population but low number of stations near it. Blue points are those with both high population and high number of stations near it. Green points are those with both low population and low number of stations near it.
-
 London: Scatterplot of the number of stations that are within 1400m of a population point, and its population.
+
+There are two lines dividing the plot. The vertical line represents the 3rd quartile of the population of the points. The horizontal line represents the 3rd quartile of the number of stations, which is 1 station at 1400 meters. The points are coloured based on their quadrant. Red points are those with a "normal" population but high number of stations near it. Orange points are those with high population but low number of stations near it. Blue points are those with both high population and high number of stations near it. Green points are those with both low population and low number of stations near it.
 
 ![tokyo_quadrant](examples/tokyo_quadrant.png)
 
@@ -145,7 +145,7 @@ target/release/clip_pp london > ../data/london_pp.csv
 target/release/clip_pp tokyo > ../data/tokyo_pp.csv
 ```
 
-It reads the entire population point file into memory, then splits up the file to process the bits in parallel across multiple CPUs. To avoid accumulating a potentially huge result, it writes the results immediately after calculating it. To simplify things, writing is done by printing to stdout instead of writing to a file. Use a UNIX pipe to divert stdout to a file. Rust already uses a mutex when writing to stdout, so there are no race conditions.
+It reads the entire population point file into memory, then splits up the file to process the chunks in parallel across multiple CPUs. To avoid accumulating a potentially huge result, it writes the results immediately after calculating it. To simplify things, writing is done by printing to stdout instead of writing to a file. Use a UNIX pipe to divert stdout to a file. Rust already uses a mutex when writing to stdout, so there are no race conditions.
 
 This is the first step that takes significant time (10 minutes for London, 28 minutes for Tokyo). Technically the city boundaries are multi-polygons so every polygon is compared, but in practice the number of population points dominates and it is always possible to dissolve the multi-polygons into one.
 
