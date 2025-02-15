@@ -4,10 +4,7 @@ use plotters::{prelude::*, style::full_palette::GREY};
 use rayon::prelude::*;
 use rstar::RTree;
 use src::{load_stations, parse_csv_line, Plot, Search};
-use std::{
-    fs, io,
-    sync::{Arc, Mutex},
-};
+use std::fs;
 
 fn main() {
     for city in ["london", "tokyo"] {
@@ -51,20 +48,26 @@ struct StationWithinPP {
 
 impl Search<Vec<i32>> for StationWithinPP {
     fn search_to_file(&self, tree: &RTree<(f64, f64)>, pp_lines: &[&str]) {
+        // this isn't actually used, but here for debugging i suppose
         eprintln!("searching...");
-        let mut wtr = csv::Writer::from_writer(io::stdout());
-        wtr.write_record(&["max_dist", "n_stations"]).unwrap();
-        let wtr = Arc::new(Mutex::new(wtr));
 
         let dists: Vec<_> = (100..=3000).step_by(100).collect();
-        dists.into_par_iter().for_each(|max_dist| {
-            let n_stations = self.search(tree, pp_lines, max_dist as f64);
-            let mut w = wtr.lock().unwrap();
-            for num in n_stations {
-                w.write_record(&[format!("{}", max_dist), format!("{}", num)])
-                    .unwrap();
-            }
-        });
+        let result: Vec<_> = dists
+            .into_par_iter()
+            .flat_map(|max_dist| {
+                let n_stations = self.search(tree, pp_lines, max_dist as f64);
+                let v: Vec<_> = n_stations
+                    .iter()
+                    .map(|num| format!("{},{}", max_dist, num))
+                    .collect();
+                v
+            })
+            .collect();
+
+        println!("max_dist,n_stations");
+        for r in result {
+            println!("{}", r);
+        }
     }
 
     fn search(
@@ -75,28 +78,22 @@ impl Search<Vec<i32>> for StationWithinPP {
     ) -> Vec<i32> {
         let max_distance_squared = max_distance * max_distance;
 
-        let pop_within_dist =
-            Arc::new(Mutex::new(Vec::with_capacity(pp_lines.len())));
+        let pop_within_dist: Vec<_> = pp_lines
+            .into_par_iter()
+            .map(|pp_line| {
+                let xs = parse_csv_line(pp_line);
 
-        pp_lines.into_par_iter().for_each(|pp_line| {
-            let mut n_stations = 0;
-            let xs = parse_csv_line(pp_line);
+                // a line in pp looks like this
+                // lat/lon, lat/lon, pop, x, y
+                let x: f64 = xs[3].parse().unwrap();
+                let y: f64 = xs[4].parse().unwrap();
 
-            // a line in pp looks like this
-            // lat/lon, lat/lon, pop, x, y
-            let x: f64 = xs[3].parse().unwrap();
-            let y: f64 = xs[4].parse().unwrap();
+                tree.locate_within_distance((x, y), max_distance_squared)
+                    .count() as i32
+            })
+            .collect();
 
-            for _ in tree.locate_within_distance((x, y), max_distance_squared) {
-                n_stations += 1;
-            }
-            (*pop_within_dist.lock().unwrap()).push(n_stations);
-        });
-
-        Arc::try_unwrap(pop_within_dist)
-            .unwrap()
-            .into_inner()
-            .unwrap()
+        pop_within_dist
     }
 }
 
@@ -106,24 +103,25 @@ impl Search<Vec<i32>> for StationWithinPP {
 impl Plot<Vec<(i32, Vec<i32>, Vec<i32>)>, Vec<i32>> for StationWithinPP {
     fn search_to_plot(&self, tree: &RTree<(f64, f64)>, pp_lines: &[&str]) {
         eprintln!("searching...");
-        let data = Arc::new(Mutex::new(vec![]));
         let dists: Vec<_> = (100..=3000).step_by(100).collect();
-        dists.into_par_iter().for_each(|max_dist| {
-            let n_stations = self.search(tree, pp_lines, max_dist as f64);
-            let quartiles = Quartiles::new(&n_stations);
-            let lower = quartiles.values()[0];
-            let upper = quartiles.values()[4];
-            let outliers: Vec<_> = n_stations
-                .iter()
-                .filter(|x| {
-                    let x = **x as f32;
-                    x < lower || x > upper
-                })
-                .cloned()
-                .collect();
-            (*data.lock().unwrap()).push((max_dist, n_stations, outliers));
-        });
-        let data = Arc::try_unwrap(data).unwrap().into_inner().unwrap();
+        let data: Vec<_> = dists
+            .into_par_iter()
+            .map(|max_dist| {
+                let n_stations = self.search(tree, pp_lines, max_dist as f64);
+                let quartiles = Quartiles::new(&n_stations);
+                let lower = quartiles.values()[0];
+                let upper = quartiles.values()[4];
+                let outliers: Vec<_> = n_stations
+                    .iter()
+                    .filter(|x| {
+                        let x = **x as f32;
+                        x < lower || x > upper
+                    })
+                    .cloned()
+                    .collect();
+                (max_dist, n_stations, outliers)
+            })
+            .collect();
         self.plot(data).unwrap();
     }
 
@@ -163,7 +161,8 @@ impl Plot<Vec<(i32, Vec<i32>, Vec<i32>)>, Vec<i32>> for StationWithinPP {
         scatter_ctx.draw_series(data.iter().map(
             |(distance, n_stations, _)| {
                 let n_stations_quartiles = Quartiles::new(n_stations);
-                Boxplot::new_vertical(*distance, &n_stations_quartiles).width(20)
+                Boxplot::new_vertical(*distance, &n_stations_quartiles)
+                    .width(20)
             },
         ))?;
 

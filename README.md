@@ -179,9 +179,8 @@ python python/plot_props.py
 ```sh
 cd rust
 cargo b --release --bin stations_within_pp
-# Usage: target/release/stations_within_pp [city]
-target/release/stations_within_pp london
-target/release/stations_within_pp tokyo
+# Usage: target/release/stations_within_pp
+target/release/stations_within_pp
 ```
 
 A brute force search has time complexity O(n\*m), where n is the number of stations and m is the number of population points. There are millions to billions of population points so asymptotic growth is really important here.
