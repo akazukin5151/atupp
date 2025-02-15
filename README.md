@@ -152,6 +152,7 @@ Technically the city boundaries are multi-polygons so every polygon is compared,
 ## Reproject stations and population points into WGS84, Pseudo-Mercator, EPSG:3857
 
 ```sh
+cd ..
 python python/reproj_to_meters.py london_trains
 python python/reproj_to_meters.py tokyo_trains
 python python/reproj_to_meters.py london_pp
@@ -194,7 +195,6 @@ There are m population points, so searching for the nearest station for every po
 We choose 1400 meters here because this is the closest distance where the Q3 of number of stations within 1400 meters is higher than 1, for both cities
 
 ```sh
-cd rust
 cargo b --release --bin quadrants
 # Usage: target/release/quadrant [X meters]
 target/release/quadrants 1400
@@ -203,7 +203,6 @@ target/release/quadrants 1400
 ## Map of all population points, colored by their quadrant
 
 ```sh
-cd rust
 cargo b --release --bin quadrant_coords
 # Usage: target/release/quadrant_coords [city] [X meters] [point_type] [outfile]
 target/release/quadrant_coords london 1400 red ../data/london_reds.csv
@@ -221,15 +220,3 @@ python python/plot_quadrants_map.py london
 python python/plot_quadrants_map.py tokyo
 ```
 
-The individual quadrants can be mapped alone as well:
-
-```sh
-target/release/quadrant_coords london 1400 red ../data/london_reds.csv
-target/release/quadrant_coords tokyo 1400 red ../data/tokyo_reds.csv
-
-cd ..
-python python/plot_significant_quadrants_map.py london reds
-python python/plot_significant_quadrants_map.py tokyo reds
-```
-
-Replace `reds` with `oranges`/`blues`/`greens`
