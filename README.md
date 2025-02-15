@@ -140,14 +140,14 @@ This is a pretty wide definition of "Greater Tokyo", but the Japanese government
 ```sh
 cd rust
 cargo b --release --bin clip_pp
-# Usage: target/release/clip_pp [city]
-target/release/clip_pp london > ../data/london_pp.csv
-target/release/clip_pp tokyo > ../data/tokyo_pp.csv
+# Usage: target/release/clip_pp [city] [outfile]
+target/release/clip_pp london ../data/london_pp.csv
+target/release/clip_pp tokyo ../data/tokyo_pp.csv
 ```
 
-It reads the entire population point file into memory, then splits up the file to process the chunks in parallel across multiple CPUs. To avoid accumulating a potentially huge result, it writes the results immediately after calculating it. To simplify things, writing is done by printing to stdout instead of writing to a file. Use a UNIX pipe to divert stdout to a file. Rust already uses a mutex when writing to stdout, so there are no race conditions.
+It reads the entire population point file into memory, then splits up the file to process the chunks in parallel across multiple CPUs.
 
-This is the first step that takes significant time (10 minutes for London, 28 minutes for Tokyo). Technically the city boundaries are multi-polygons so every polygon is compared, but in practice the number of population points dominates and it is always possible to dissolve the multi-polygons into one.
+Technically the city boundaries are multi-polygons so every polygon is compared, but in practice the number of population points dominates and it is always possible to dissolve the multi-polygons into one.
 
 ## Reproject stations and population points into WGS84, Pseudo-Mercator, EPSG:3857
 

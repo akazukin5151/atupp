@@ -1,16 +1,16 @@
 // Usage: target/release/clip_pp [city]
 
-use src::parse_csv_line;
 use geo::Contains;
 use geojson::GeoJson;
 use rayon::prelude::*;
+use src::parse_csv_line;
 use std::fs::{self, File};
-use std::io::{self, Read, Write};
+use std::io::Read;
 
 pub fn main() {
-    let mut args = std::env::args();
+    let args: Vec<_> = std::env::args().collect();
 
-    let (boundaries, pp, flip_coords) = if args.nth(1).unwrap() == "london" {
+    let (boundaries, pp, flip_coords) = if args[1] == "london" {
         let boundaries = "../data/london boundaries/london.geojson";
         let pp = "../data/pp/population_gbr_2019-07-01.csv";
         let flip_coords = true;
@@ -27,11 +27,15 @@ pub fn main() {
     let file = fs::read_to_string(pp).unwrap();
 
     let lines: Vec<_> = file.split('\n').collect();
-    println!("{}", lines[0]);
 
-    lines[1..].into_par_iter().for_each(|line| {
-        process(line, &polygons, flip_coords, &mut io::stdout())
-    });
+    let result: Vec<_> = lines[1..]
+        .into_par_iter()
+        .filter_map(|line| process(line, &polygons, flip_coords))
+        .collect();
+
+    let joined = lines[0].to_string() + "\n" + &result.join("\n");
+    let out_path = args[2].clone();
+    fs::write(out_path, joined).unwrap();
 }
 
 fn load_polygons(path: &str) -> geo::GeometryCollection {
@@ -43,19 +47,18 @@ fn load_polygons(path: &str) -> geo::GeometryCollection {
     geometry.try_into().unwrap()
 }
 
-fn process<W: Write>(
-    line: &str,
+fn process<'a>(
+    line: &'a str,
     polygons: &geo::GeometryCollection,
     flip_coords: bool,
-    mut stdout: W,
-) {
+) -> Option<&'a str> {
     if line.is_empty() {
-        return;
+        return None;
     }
     let xs = parse_csv_line(line);
 
     if xs.is_empty() {
-        return;
+        return None;
     }
 
     // lat is y, lon is x
@@ -68,15 +71,16 @@ fn process<W: Write>(
         let lat: f64 = xs[1].parse().unwrap();
         geo::Point::new(lon, lat)
     };
+
     if polygons.contains(&point) {
-        writeln!(stdout, "{}", line).unwrap();
+        Some(line)
+    } else {
+        None
     }
 }
 
 #[cfg(test)]
 mod test {
-    use std::str::from_utf8;
-
     use super::*;
 
     #[test]
@@ -95,11 +99,9 @@ mod test {
         let line =
             r#""51.5781944444857","-0.24125000000019298","9.821008556019821""#;
 
-        let mut vec = vec![];
-        process(line, &polygons, true, &mut vec);
+        let out = process(line, &polygons, true).unwrap();
 
-        let stdout = from_utf8(&vec).unwrap();
-        assert_eq!(stdout, format!("{}\n", line));
+        assert_eq!(out, line);
     }
 
     #[test]
@@ -118,10 +120,8 @@ mod test {
         let line =
             r#""139.80944444445794","35.66361111110322","17.34286880493164""#;
 
-        let mut vec = vec![];
-        process(line, &polygons, false, &mut vec);
+        let out = process(line, &polygons, false).unwrap();
 
-        let stdout = from_utf8(&vec).unwrap();
-        assert_eq!(stdout, format!("{}\n", line));
+        assert_eq!(out, line);
     }
 }
