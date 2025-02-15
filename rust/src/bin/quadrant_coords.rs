@@ -4,10 +4,7 @@ use plotters::prelude::Quartiles;
 use rayon::prelude::*;
 use rstar::RTree;
 use src::{load_stations, parse_csv_line, Search};
-use std::{
-    fs, io,
-    sync::{Arc, Mutex},
-};
+use std::fs;
 
 enum PointType {
     Red,
@@ -57,6 +54,7 @@ fn main() {
         "green" => PointType::Green,
         _ => panic!("unknown point type"),
     };
+    let outfile = &args[4];
     let pp_path = format!("../data/{}_pp_meters.csv", city);
 
     // TODO: fix this inconsistency...
@@ -66,7 +64,13 @@ fn main() {
         "../data/tokyo_trains/coords_meters.csv"
     };
 
-    inner_main(&pp_path, stations_path, distance_threshold, point_type);
+    inner_main(
+        &pp_path,
+        stations_path,
+        distance_threshold,
+        point_type,
+        outfile,
+    );
 }
 
 fn inner_main(
@@ -74,6 +78,7 @@ fn inner_main(
     stations_path: &str,
     distance_threshold: f64,
     point_type: PointType,
+    outfile: &str,
 ) {
     eprintln!("loading stations...");
     let stations = load_stations(stations_path);
@@ -119,15 +124,17 @@ fn inner_main(
         n_stations_q3,
         distance_threshold,
         point_type,
+        outfile,
     };
     q.search_to_file(&tree, &pp_lines);
 }
 
-struct QuadrantCoords {
+struct QuadrantCoords<'a> {
     pop_q3: f64,
     n_stations_q3: f64,
     distance_threshold: f64,
     point_type: PointType,
+    outfile: &'a str,
 }
 
 fn count_n_stations(
@@ -137,43 +144,39 @@ fn count_n_stations(
 ) -> Vec<i32> {
     let max_distance_squared = max_distance * max_distance;
 
-    let pop_within_dist =
-        Arc::new(Mutex::new(Vec::with_capacity(pp_lines.len())));
+    let pop_within_dist: Vec<_> = pp_lines
+        .into_par_iter()
+        .map(|pp_line| {
+            let mut n_stations = 0;
+            let xs = parse_csv_line(pp_line);
 
-    pp_lines.into_par_iter().for_each(|pp_line| {
-        let mut n_stations = 0;
-        let xs = parse_csv_line(pp_line);
+            // a line in pp looks like this
+            // lat/lon, lat/lon, pop, x, y
+            let x: f64 = xs[3].parse().unwrap();
+            let y: f64 = xs[4].parse().unwrap();
 
-        // a line in pp looks like this
-        // lat/lon, lat/lon, pop, x, y
-        let x: f64 = xs[3].parse().unwrap();
-        let y: f64 = xs[4].parse().unwrap();
+            for _ in tree.locate_within_distance((x, y), max_distance_squared) {
+                n_stations += 1;
+            }
+            n_stations
+        })
+        .collect();
 
-        for _ in tree.locate_within_distance((x, y), max_distance_squared) {
-            n_stations += 1;
-        }
-        (*pop_within_dist.lock().unwrap()).push(n_stations);
-    });
-
-    Arc::try_unwrap(pop_within_dist)
-        .unwrap()
-        .into_inner()
-        .unwrap()
+    pop_within_dist
 }
 
-impl Search<Vec<(f64, f64)>> for QuadrantCoords {
+impl Search<Vec<(f64, f64)>> for QuadrantCoords<'_> {
     fn search_to_file(&self, tree: &RTree<(f64, f64)>, pp_lines: &[&str]) {
         eprintln!("searching...");
-        let mut wtr = csv::Writer::from_writer(io::stdout());
-        wtr.write_record(&["x", "y"]).unwrap();
-        let wtr = Arc::new(Mutex::new(wtr));
 
         let xys = self.search(tree, pp_lines, self.distance_threshold);
-        let mut w = wtr.lock().unwrap();
-        for (x, y) in xys {
-            w.write_record(&[format!("{}", x), format!("{}", y)])
-                .unwrap();
-        }
+        let res: Vec<_> = xys
+            .into_iter()
+            .map(|(x, y)| format!("{},{}", x, y))
+            .collect();
+
+        let joined = "x,y\n".to_string() + &res.join("\n");
+        fs::write(self.outfile, joined).unwrap();
     }
 
     fn search(
@@ -184,36 +187,37 @@ impl Search<Vec<(f64, f64)>> for QuadrantCoords {
     ) -> Vec<(f64, f64)> {
         let max_distance_squared = max_distance * max_distance;
 
-        let pop_within_dist =
-            Arc::new(Mutex::new(Vec::with_capacity(pp_lines.len())));
+        let pop_within_dist: Vec<_> = pp_lines
+            .into_par_iter()
+            .filter_map(|pp_line| {
+                let mut n_stations = 0;
+                let xs = parse_csv_line(pp_line);
 
-        pp_lines.into_par_iter().for_each(|pp_line| {
-            let mut n_stations = 0;
-            let xs = parse_csv_line(pp_line);
+                // a line in pp looks like this
+                // lat/lon, lat/lon, pop, x, y
+                let pop: f64 = xs[2].parse().unwrap();
+                let x: f64 = xs[3].parse().unwrap();
+                let y: f64 = xs[4].parse().unwrap();
 
-            // a line in pp looks like this
-            // lat/lon, lat/lon, pop, x, y
-            let pop: f64 = xs[2].parse().unwrap();
-            let x: f64 = xs[3].parse().unwrap();
-            let y: f64 = xs[4].parse().unwrap();
+                for _ in
+                    tree.locate_within_distance((x, y), max_distance_squared)
+                {
+                    n_stations += 1;
+                }
+                let n_stations = n_stations as f64;
+                if self.point_type.to_cond(
+                    pop,
+                    n_stations,
+                    self.pop_q3,
+                    self.n_stations_q3,
+                ) {
+                    Some((x, y))
+                } else {
+                    None
+                }
+            })
+            .collect();
 
-            for _ in tree.locate_within_distance((x, y), max_distance_squared) {
-                n_stations += 1;
-            }
-            let n_stations = n_stations as f64;
-            if self.point_type.to_cond(
-                pop,
-                n_stations,
-                self.pop_q3,
-                self.n_stations_q3,
-            ) {
-                (*pop_within_dist.lock().unwrap()).push((x, y));
-            }
-        });
-
-        Arc::try_unwrap(pop_within_dist)
-            .unwrap()
-            .into_inner()
-            .unwrap()
+        pop_within_dist
     }
 }

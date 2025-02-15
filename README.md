@@ -204,15 +204,17 @@ target/release/quadrants 1400
 
 ```sh
 cd rust
-target/release/quadrant_coords london 1400 red > ../data/london_reds.csv
-target/release/quadrant_coords london 1400 orange > ../data/london_oranges.csv
-target/release/quadrant_coords london 1400 blue > ../data/london_blues.csv
-target/release/quadrant_coords london 1400 green > ../data/london_greens.csv
+cargo b --release --bin quadrant_coords
+# Usage: target/release/quadrant_coords [city] [X meters] [point_type] [outfile]
+target/release/quadrant_coords london 1400 red ../data/london_reds.csv
+target/release/quadrant_coords london 1400 orange ../data/london_oranges.csv
+target/release/quadrant_coords london 1400 blue ../data/london_blues.csv
+target/release/quadrant_coords london 1400 green ../data/london_greens.csv
 
-target/release/quadrant_coords tokyo 1400 red > ../data/tokyo_reds.csv
-target/release/quadrant_coords tokyo 1400 orange > ../data/tokyo_oranges.csv
-target/release/quadrant_coords tokyo 1400 blue > ../data/tokyo_blues.csv
-target/release/quadrant_coords tokyo 1400 green > ../data/tokyo_greens.csv
+target/release/quadrant_coords tokyo 1400 red ../data/tokyo_reds.csv
+target/release/quadrant_coords tokyo 1400 orange ../data/tokyo_oranges.csv
+target/release/quadrant_coords tokyo 1400 blue ../data/tokyo_blues.csv
+target/release/quadrant_coords tokyo 1400 green ../data/tokyo_greens.csv
 
 cd ..
 python python/plot_quadrants_map.py london
@@ -222,10 +224,8 @@ python python/plot_quadrants_map.py tokyo
 The individual quadrants can be mapped alone as well:
 
 ```sh
-cargo b --release --bin quadrant_coords
-# Usage: target/release/quadrant_coords [city] [X meters] [point_type]
-target/release/quadrant_coords london 1400 red > ../data/london_reds.csv
-target/release/quadrant_coords tokyo 1400 red > ../data/tokyo_reds.csv
+target/release/quadrant_coords london 1400 red ../data/london_reds.csv
+target/release/quadrant_coords tokyo 1400 red ../data/tokyo_reds.csv
 
 cd ..
 python python/plot_significant_quadrants_map.py london reds
