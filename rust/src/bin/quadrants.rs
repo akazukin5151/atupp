@@ -8,10 +8,7 @@ use src::{
     load_stations, parse_csv_line, plot_hline, plot_vline, Plot, Search,
 };
 use std::cmp::Ordering;
-use std::{
-    fs, io,
-    sync::{Arc, Mutex},
-};
+use std::fs;
 
 fn main() {
     let mut args = std::env::args();
@@ -72,16 +69,14 @@ struct Quadrants {
 
 impl Search<Vec<(f64, i32)>> for Quadrants {
     fn search_to_file(&self, tree: &RTree<(f64, f64)>, pp_lines: &[&str]) {
+        // this isn't actually used here, just for debugging
         eprintln!("searching...");
-        let mut wtr = csv::Writer::from_writer(io::stdout());
-        wtr.write_record(&["population", "n_stations"]).unwrap();
-        let wtr = Arc::new(Mutex::new(wtr));
 
-        let n_stations = self.search(tree, pp_lines, self.distance_threshold);
-        let mut w = wtr.lock().unwrap();
-        for (pop, n_stations) in n_stations {
-            w.write_record(&[format!("{}", pop), format!("{}", n_stations)])
-                .unwrap();
+        let res = self.search(tree, pp_lines, self.distance_threshold);
+
+        println!("population,n_stations");
+        for (pop, n_stations) in res {
+            println!("{},{}", pop, n_stations)
         }
     }
 
@@ -93,29 +88,28 @@ impl Search<Vec<(f64, i32)>> for Quadrants {
     ) -> Vec<(f64, i32)> {
         let max_distance_squared = max_distance * max_distance;
 
-        let pop_within_dist =
-            Arc::new(Mutex::new(Vec::with_capacity(pp_lines.len())));
+        let pop_within_dist: Vec<_> = pp_lines
+            .into_par_iter()
+            .map(|pp_line| {
+                let mut n_stations = 0;
+                let xs = parse_csv_line(pp_line);
 
-        pp_lines.into_par_iter().for_each(|pp_line| {
-            let mut n_stations = 0;
-            let xs = parse_csv_line(pp_line);
+                // a line in pp looks like this
+                // lat/lon, lat/lon, pop, x, y
+                let pop: f64 = xs[2].parse().unwrap();
+                let x: f64 = xs[3].parse().unwrap();
+                let y: f64 = xs[4].parse().unwrap();
 
-            // a line in pp looks like this
-            // lat/lon, lat/lon, pop, x, y
-            let pop: f64 = xs[2].parse().unwrap();
-            let x: f64 = xs[3].parse().unwrap();
-            let y: f64 = xs[4].parse().unwrap();
+                for _ in
+                    tree.locate_within_distance((x, y), max_distance_squared)
+                {
+                    n_stations += 1;
+                }
+                (pop, n_stations)
+            })
+            .collect();
 
-            for _ in tree.locate_within_distance((x, y), max_distance_squared) {
-                n_stations += 1;
-            }
-            (*pop_within_dist.lock().unwrap()).push((pop, n_stations));
-        });
-
-        Arc::try_unwrap(pop_within_dist)
-            .unwrap()
-            .into_inner()
-            .unwrap()
+        pop_within_dist
     }
 }
 
@@ -152,10 +146,7 @@ impl Plot<Vec<(f64, i32)>, Vec<(f64, i32)>> for Quadrants {
             .margin(20_i32)
             .x_label_area_size(40_i32)
             .y_label_area_size(40_i32)
-            .build_cartesian_2d(
-                0_f64..max_x_value,
-                0..max_y_value,
-            )?;
+            .build_cartesian_2d(0_f64..max_x_value, 0..max_y_value)?;
 
         scatter_ctx
             .configure_mesh()
@@ -163,7 +154,9 @@ impl Plot<Vec<(f64, i32)>, Vec<(f64, i32)>> for Quadrants {
                 "Number of stations within {} m of a population point",
                 self.distance_threshold
             ))
-            .axis_desc_style(("sans-serif", 20_i32).into_text_style(scatterplot_area))
+            .axis_desc_style(
+                ("sans-serif", 20_i32).into_text_style(scatterplot_area),
+            )
             .disable_x_mesh()
             .disable_y_mesh()
             .draw()?;
@@ -218,7 +211,9 @@ impl Plot<Vec<(f64, i32)>, Vec<(f64, i32)>> for Quadrants {
         chart
             .configure_mesh()
             .x_desc("Population of point")
-            .axis_desc_style(("sans-serif", 20_i32).into_text_style(bottom_box_area))
+            .axis_desc_style(
+                ("sans-serif", 20_i32).into_text_style(bottom_box_area),
+            )
             .disable_x_mesh()
             .disable_y_mesh()
             .draw()?;
