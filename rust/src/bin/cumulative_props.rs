@@ -3,15 +3,12 @@
 use rayon::prelude::*;
 use rstar::RTree;
 use src::{load_stations, parse_csv_line, Search};
-use std::{
-    fs, io,
-    sync::{Arc, Mutex},
-};
+use std::fs;
 
 fn main() {
-    let mut args = std::env::args();
+    let args: Vec<_> = std::env::args().collect();
 
-    let (pp_path, stations_path) = if args.nth(1).unwrap() == "london" {
+    let (pp_path, stations_path) = if args[1] == "london" {
         let pp_path = "../data/london_pp_meters.csv";
         let stations_path =
             "../data/london_trains/stations/station_coords_meters.csv";
@@ -38,37 +35,37 @@ fn main() {
         .filter(|line| !line.is_empty())
         .collect();
 
-    let o = CumulativeProps { pp_path };
+    let o = CumulativeProps {
+        pp_path,
+        out_file: &args[2],
+    };
     o.search_to_file(&tree, &pp_lines);
 }
 
-struct CumulativeProps {
+struct CumulativeProps<'a> {
     pp_path: &'static str,
+    out_file: &'a str,
 }
 
-impl Search<f64> for CumulativeProps {
+impl Search<f64> for CumulativeProps<'_> {
     fn search_to_file(&self, tree: &RTree<(f64, f64)>, pp_lines: &[&str]) {
         eprintln!("getting city population...");
         let city_pop = total_city_pop(self.pp_path);
         dbg!(city_pop);
 
         eprintln!("searching...");
-        let mut wtr = csv::Writer::from_writer(io::stdout());
-        wtr.write_record(&["max_dist", "prop"]).unwrap();
-        let wtr = Arc::new(Mutex::new(wtr));
 
         let dists: Vec<_> = (100..=3000).step_by(100).collect();
-        dists.into_par_iter().for_each(|max_dist| {
-            let pop_within =
-                self.search(tree, pp_lines, max_dist as f64);
-            wtr.lock()
-                .unwrap()
-                .write_record(&[
-                    format!("{}", max_dist),
-                    format!("{}", pop_within / city_pop),
-                ])
-                .unwrap();
-        });
+        let result: Vec<_> = dists
+            .into_par_iter()
+            .map(|max_dist| {
+                let pop_within = self.search(tree, pp_lines, max_dist as f64);
+                format!("{},{}", max_dist, pop_within / city_pop)
+            })
+            .collect();
+
+        let joined = "max_dist,prop\n".to_string() + &result.join("\n");
+        fs::write(self.out_file, joined).unwrap();
     }
 
     fn search(
@@ -79,30 +76,27 @@ impl Search<f64> for CumulativeProps {
     ) -> f64 {
         let max_distance_squared = max_distance * max_distance;
 
-        let pop_within_dist = Arc::new(Mutex::new(0.0));
+        pp_lines
+            .into_par_iter()
+            .map(|pp_line| {
+                let xs = parse_csv_line(pp_line);
 
-        pp_lines.into_par_iter().for_each(|pp_line| {
-            let xs = parse_csv_line(pp_line);
+                // a line in pp looks like this
+                // lat/lon, lat/lon, pop, x, y
+                let pop: f64 = xs[2].parse().unwrap();
+                let x: f64 = xs[3].parse().unwrap();
+                let y: f64 = xs[4].parse().unwrap();
 
-            // a line in pp looks like this
-            // lat/lon, lat/lon, pop, x, y
-            let pop: f64 = xs[2].parse().unwrap();
-            let x: f64 = xs[3].parse().unwrap();
-            let y: f64 = xs[4].parse().unwrap();
-
-            if let Some((_, nearest_dist_squared)) =
-                tree.nearest_neighbor_iter_with_distance_2(&(x, y)).next()
-            {
-                if nearest_dist_squared <= max_distance_squared {
-                    *pop_within_dist.lock().unwrap() += pop;
-                }
-            };
-        });
-
-        Arc::try_unwrap(pop_within_dist)
-            .unwrap()
-            .into_inner()
-            .unwrap()
+                if let Some((_, nearest_dist_squared)) =
+                    tree.nearest_neighbor_iter_with_distance_2(&(x, y)).next()
+                {
+                    if nearest_dist_squared <= max_distance_squared {
+                        return pop;
+                    }
+                };
+                0.0
+            })
+            .sum()
     }
 }
 

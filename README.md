@@ -167,9 +167,9 @@ Calculating distances requires the coordinates to be in meters rather than lat/l
 ```sh
 cd rust
 cargo b --release --bin cumulative_props
-# Usage: target/release/cumulative_props [city]
-target/release/cumulative_props london > ../data/london_props.csv
-target/release/cumulative_props tokyo > ../data/tokyo_props.csv
+# Usage: target/release/cumulative_props [city] [outfile]
+target/release/cumulative_props london ../data/london_props.csv
+target/release/cumulative_props tokyo ../data/tokyo_props.csv
 cd ..
 python python/plot_props.py
 ```
